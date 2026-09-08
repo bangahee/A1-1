@@ -39,12 +39,13 @@ Checkpoint: explain why a missing customer ID must not be mean-imputed.
 Study `src/pipeline.py` in this order:
 
 1. `load_data()` validates and parses the CSV.
-2. `handle_missing_values()` uses product-group evidence.
+2. `handle_missing()` uses product-group evidence (`handle_missing_values()` is
+   retained only as a compatibility alias).
 3. `engineer_features()` applies vectorized numeric/text/image operations.
 4. `detect_outliers()` implements the IQR formula.
 5. `calculate_rfm()` aggregates customers and assigns segments.
 
-Checkpoint: all four tests pass with `python -m unittest -v`.
+Checkpoint: all five tests pass with `python -m unittest -v`.
 
 ## Step 5 - Handle missing values and outliers
 
@@ -96,4 +97,3 @@ python scripts/verify_project.py
 
 Checkpoint: all checks report success. Then commit and push the repository to
 obtain the GitHub URL requested by the mission.
-

@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+import hashlib
+import json
 from pathlib import Path
+import platform
+import time
 
 import nbformat as nbf
 from nbclient import NotebookClient
@@ -68,6 +73,13 @@ df.info()
             """
 overview = analyzer.overview()
 display(pd.Series(overview["missing_by_column"], name="missing_count").to_frame())
+display(
+    df.dtypes.astype(str)
+    .value_counts()
+    .rename_axis("dtype")
+    .rename("column_count")
+    .to_frame()
+)
 display(df.select_dtypes(include="number").describe().T)
 """
         ),
@@ -81,7 +93,7 @@ display(df.select_dtypes(include="number").describe().T)
         markdown("## 3. 결측치 처리와 멀티모달 특징 공학"),
         code(
             """
-missing_report = analyzer.handle_missing_values(strategy="group_mode", group_col="stock_code")
+missing_report = analyzer.handle_missing(strategy="group_mode", group_col="stock_code")
 display(pd.DataFrame(missing_report))
 
 df = analyzer.engineer_features()
@@ -94,7 +106,9 @@ display(df[["quantity", "unit_price", "amount", "description", "word_count", "im
 - 텍스트: 상품 설명을 공백 단위로 나눈 `word_count`를 생성했다.
 - 이미지 배열: 25,000×64 행렬로 쌓아 행 방향 `mean`과 `std`를 한 번에 계산했다.
 
-이 방식은 Python `for` 반복으로 개별 픽셀을 계산하는 것보다 간결하고, 실제 계산을 최적화된 NumPy 루틴에 위임한다.
+텍스트 결측은 그룹 대치 후에도 값이 없으면 `UNKNOWN PRODUCT`로 표시하고, 이미지 배열은 길이가 다르거나 비어 있거나 NaN/무한대를 포함하면 통계를 만들지 않고 명시적으로 실패시킨다. 이 정책은 품질 문제를 0으로 조용히 대치해 숨기지 않는다.
+
+`to_numpy()`와 `np.stack()`은 동종 값을 연속적인 배열로 배치하여 Python 객체 순회 비용을 줄이고, NumPy의 컴파일된 루프와 SIMD 친화적 연산을 사용하기 위한 선택이다. 다만 전체 이미지 행렬을 한 번에 적재하므로 원본 전체 규모에서는 배치 처리나 메모리 매핑이 필요하다.
 """
         ),
         markdown(
@@ -107,7 +121,7 @@ Lower = Q_1 - 1.5IQR, \quad
 Upper = Q_3 + 1.5IQR
 \]
 
-반품과 취소는 음수라는 비즈니스 의미가 있으므로 별도로 보존하고, 양수 구매 금액의 극단값만 상한·하한으로 클리핑했다. 원본 `amount`도 남겨 처리 전후를 검증할 수 있게 했다.
+IQR은 평균·표준편차처럼 정규분포를 가정하지 않고 중앙 50%에 기반하므로 오른쪽 꼬리가 긴 거래금액에 비교적 견고하다. 하지만 비대칭 분포의 정상적인 고액 주문도 이상치로 과다 표시할 수 있다. 반품과 취소는 음수라는 비즈니스 의미가 있으므로 별도로 보존하고, 양수 구매 금액의 극단값만 상한·하한으로 클리핑했다. 원본 `amount`도 남겨 처리 전후를 검증할 수 있게 했다.
 """
         ),
         code(
@@ -147,7 +161,7 @@ for filename in [
 - Frequency: 서로 다른 주문서 수(클수록 좋음)
 - Monetary: IQR 조정된 유효 구매 금액 합계(클수록 좋음)
 
-각 지표를 사분위 점수 1~4로 바꾸고 `VIP`, `Loyal`, `New`, `Churned`로 분류한다. 기준일은 데이터의 마지막 유효 구매일 다음 날인 2011-12-10이다.
+각 지표를 사분위 점수 1~4로 바꾸고 `VIP`, `Loyal`, `New`, `Churned`로 분류한다. 사분위는 사전 비즈니스 임계값이 없는 탐색 단계에서 각 점수 구간에 관측치를 충분히 확보하면서 네 운영 그룹과 연결하기 쉬워 선택했다. 3분위는 경계가 거칠어 그룹이 커지고, 5분위는 경계 근처 고객 이동과 작은 그룹을 늘릴 수 있다. 운영 전에는 30/90/180일 같은 실제 캠페인·구매주기 임계값과 비교해야 한다. 기준일은 데이터의 마지막 유효 구매일 다음 날인 2011-12-10이다.
 """
         ),
         code(
@@ -198,6 +212,13 @@ display(Image(filename=str(FIGURES / "07_segment_summary_table.png")))
 모든 표본 추출, 특징 생성, 경계값, 기준일은 코드에 명시되어 있다. `python -m scripts.run_analysis`로 산출물을 다시 만들 수 있다.
 """
         ),
+        markdown(
+            """
+## 9. 다음 단계: 예측 모델 확장
+
+권장 타깃은 기준일 이후 90일 동안 구매가 없으면 `churn_90d=1`인 이진 레이블이다. 기준일 이전 관측창에서 `Recency`, `Frequency`, `Monetary`, 평균 주문금액, 반품률, 구매 상품 수, 활동 개월 수, 국가, 최근 30/60/90일 구매 횟수와 금액을 피처로 사용할 수 있다. 미래 주문, 사후 RFM 세그먼트, 타깃 기간의 구매금액은 데이터 누수이므로 제외한다. 시간순 train/validation/test 분할과 Recall·PR-AUC·캘리브레이션을 함께 평가한다.
+"""
+        ),
     ]
     notebook = nbf.v4.new_notebook(cells=cells)
     notebook.metadata.kernelspec = {
@@ -212,7 +233,10 @@ display(Image(filename=str(FIGURES / "07_segment_summary_table.png")))
 def main() -> None:
     project_root = Path(__file__).resolve().parents[1]
     output = project_root / "notebooks" / "analysis_report.ipynb"
+    report_path = project_root / "outputs" / "notebook_execution_report.json"
+    log_path = project_root / "outputs" / "notebook_execution.log"
     output.parent.mkdir(parents=True, exist_ok=True)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
     notebook = build_notebook()
     client = NotebookClient(
         notebook,
@@ -220,9 +244,75 @@ def main() -> None:
         kernel_name="python3",
         resources={"metadata": {"path": str(project_root)}},
     )
-    client.execute()
-    nbf.write(notebook, output)
+    started_at = datetime.now().astimezone()
+    started = time.perf_counter()
+    try:
+        client.execute()
+        nbf.write(notebook, output)
+    except Exception as exc:
+        failed_report = {
+            "status": "failed",
+            "started_at": started_at.isoformat(),
+            "duration_seconds": round(time.perf_counter() - started, 3),
+            "executor": "nbclient.NotebookClient",
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+        }
+        report_path.write_text(
+            json.dumps(failed_report, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        log_path.write_text(
+            "NOTEBOOK EXECUTION FAILED\n"
+            + json.dumps(failed_report, ensure_ascii=False, indent=2)
+            + "\n",
+            encoding="utf-8",
+        )
+        raise
+
+    code_cells = [cell for cell in notebook.cells if cell.cell_type == "code"]
+    error_outputs = [
+        item
+        for cell in code_cells
+        for item in cell.get("outputs", [])
+        if item.output_type == "error"
+    ]
+    notebook_hash = hashlib.sha256(output.read_bytes()).hexdigest()
+    finished_at = datetime.now().astimezone()
+    report = {
+        "status": "success" if not error_outputs else "failed",
+        "started_at": started_at.isoformat(),
+        "finished_at": finished_at.isoformat(),
+        "duration_seconds": round(time.perf_counter() - started, 3),
+        "executor": "nbclient.NotebookClient",
+        "kernel": "python3",
+        "python_version": platform.python_version(),
+        "notebook": str(output.relative_to(project_root)),
+        "sha256": notebook_hash,
+        "total_cells": len(notebook.cells),
+        "code_cells": len(code_cells),
+        "executed_code_cells": sum(cell.execution_count is not None for cell in code_cells),
+        "error_outputs": len(error_outputs),
+        "execution_counts": [cell.execution_count for cell in code_cells],
+    }
+    report_path.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    log_lines = [
+        "NOTEBOOK EXECUTION SUCCESS",
+        f"executor={report['executor']}",
+        f"started_at={report['started_at']}",
+        f"finished_at={report['finished_at']}",
+        f"duration_seconds={report['duration_seconds']}",
+        f"python_version={report['python_version']}",
+        f"code_cells={report['code_cells']}",
+        f"executed_code_cells={report['executed_code_cells']}",
+        f"error_outputs={report['error_outputs']}",
+        f"execution_counts={report['execution_counts']}",
+        f"sha256={report['sha256']}",
+    ]
+    log_path.write_text("\n".join(log_lines) + "\n", encoding="utf-8")
     print(f"Built and executed {output}")
+    print(f"Execution evidence: {report_path} and {log_path}")
 
 
 if __name__ == "__main__":

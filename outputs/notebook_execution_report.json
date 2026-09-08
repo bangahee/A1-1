@@ -1,0 +1,25 @@
+{
+  "status": "success",
+  "started_at": "2026-09-08T18:58:14.658078+09:00",
+  "finished_at": "2026-09-08T18:58:15.814179+09:00",
+  "duration_seconds": 1.156,
+  "executor": "nbclient.NotebookClient",
+  "kernel": "python3",
+  "python_version": "3.12.14",
+  "notebook": "notebooks/analysis_report.ipynb",
+  "sha256": "d87c97c519ea0d9f03965c1040421b7ed7abd93f62bec5e3a7476b310baffd6a",
+  "total_cells": 21,
+  "code_cells": 8,
+  "executed_code_cells": 8,
+  "error_outputs": 0,
+  "execution_counts": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ]
+}

@@ -60,14 +60,20 @@ class DataAnalyzer:
 
     @staticmethod
     def parse_image_array(value: Any) -> np.ndarray:
-        """Parse a flattened CSV image using NumPy rather than imaging tools."""
+        """Parse a finite flattened CSV image using compact float32 storage.
+
+        Missing or empty inputs become empty arrays and are rejected together in
+        :meth:`engineer_features`; silently inventing pixels would bias the image
+        statistics.  float32 halves working memory versus float64 while retaining
+        far more precision than the source 0-255 grayscale-like values require.
+        """
 
         if isinstance(value, np.ndarray):
-            return value.astype(np.float64, copy=False)
+            return value.astype(np.float32, copy=False)
         if pd.isna(value):
-            return np.array([], dtype=np.float64)
+            return np.array([], dtype=np.float32)
         cleaned = str(value).strip().strip("[]").replace(",", " ")
-        return np.fromstring(cleaned, sep=" ", dtype=np.float64)
+        return np.fromstring(cleaned, sep=" ", dtype=np.float32)
 
     def _require_loaded(self) -> pd.DataFrame:
         if self.df is None:
@@ -110,7 +116,7 @@ class DataAnalyzer:
             "missing_by_column": frame.isna().sum().astype(int).to_dict(),
         }
 
-    def handle_missing_values(
+    def handle_missing(
         self,
         strategy: str = "group_mode",
         group_col: str = "stock_code",
@@ -140,6 +146,15 @@ class DataAnalyzer:
         after = frame.isna().sum().astype(int).to_dict()
         return {"before": before, "after": after}
 
+    def handle_missing_values(
+        self,
+        strategy: str = "group_mode",
+        group_col: str = "stock_code",
+    ) -> dict[str, dict[str, int]]:
+        """Backward-compatible alias for the public :meth:`handle_missing` API."""
+
+        return self.handle_missing(strategy=strategy, group_col=group_col)
+
     def engineer_features(self) -> pd.DataFrame:
         """Create numeric, text, and image statistics with vector operations."""
 
@@ -152,7 +167,11 @@ class DataAnalyzer:
         lengths = frame["product_image"].map(len)
         if lengths.nunique() != 1 or lengths.iat[0] == 0:
             raise ValueError("All product_image arrays must have one non-zero length")
-        image_matrix = np.stack(frame["product_image"].to_numpy())
+        image_matrix = np.stack(frame["product_image"].to_numpy()).astype(
+            np.float32, copy=False
+        )
+        if not np.isfinite(image_matrix).all():
+            raise ValueError("product_image arrays must contain only finite values")
         frame["image_mean"] = image_matrix.mean(axis=1)
         frame["image_std"] = image_matrix.std(axis=1)
         return frame

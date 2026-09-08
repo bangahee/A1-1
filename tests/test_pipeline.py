@@ -36,20 +36,20 @@ class DataAnalyzerTests(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def test_image_parser_and_vectorized_features(self):
-        self.analyzer.handle_missing_values()
+        self.analyzer.handle_missing()
         enriched = self.analyzer.engineer_features()
         np.testing.assert_allclose(enriched["image_mean"], 15.0)
         self.assertEqual(enriched.loc[0, "word_count"], 3)
         self.assertEqual(enriched.loc[0, "amount"], 2.5)
 
     def test_groupwise_missing_description(self):
-        report = self.analyzer.handle_missing_values()
+        report = self.analyzer.handle_missing()
         self.assertEqual(report["before"]["description"], 1)
         self.assertEqual(report["after"]["description"], 0)
         self.assertEqual(self.analyzer.df.loc[1, "description"], "RED CUP SET")
 
     def test_iqr_detection_and_clipping(self):
-        self.analyzer.handle_missing_values()
+        self.analyzer.handle_missing()
         self.analyzer.engineer_features()
         outliers = self.analyzer.detect_outliers("amount", positive_only=True)
         self.assertIn(15, outliers.index)
@@ -60,13 +60,17 @@ class DataAnalyzerTests(unittest.TestCase):
         self.assertEqual(report["after_count"], 0)
 
     def test_rfm_has_all_scores_and_valid_reference_date(self):
-        self.analyzer.handle_missing_values()
+        self.analyzer.handle_missing()
         self.analyzer.engineer_features()
         rfm = self.analyzer.calculate_rfm(reference_date="2024-02-01")
         expected = {"Recency", "Frequency", "Monetary", "R_score", "F_score", "M_score", "Segment"}
         self.assertTrue(expected.issubset(rfm.columns))
         self.assertTrue(rfm["Recency"].ge(0).all())
         self.assertTrue(rfm["Segment"].isin(["VIP", "Loyal", "New", "Churned"]).all())
+
+    def test_legacy_missing_value_alias_matches_public_api(self):
+        report = self.analyzer.handle_missing_values()
+        self.assertEqual(report["after"]["description"], 0)
 
 
 if __name__ == "__main__":

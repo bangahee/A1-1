@@ -49,6 +49,7 @@ def create_figures(
     frame: pd.DataFrame,
     rfm: pd.DataFrame,
     segment_summary: pd.DataFrame,
+    outlier_report: dict[str, Any],
     figures_dir: Path,
 ) -> None:
     sns.set_theme(style="whitegrid", context="notebook")
@@ -68,6 +69,23 @@ def create_figures(
     sns.boxplot(data=plot_values, x="Treatment", y="Amount", color="#74B9FF", ax=ax)
     ax.set_yscale("log")
     ax.set(title="Outliers before and after treatment", ylabel="Amount (GBP, log scale)")
+    eligible_count = int(frame["amount"].gt(0).sum())
+    before_count = int(outlier_report["before_count"])
+    after_count = int(outlier_report["after_count"])
+    annotation = (
+        f"IQR outliers: {before_count:,} ({before_count / eligible_count:.1%}) before"
+        f"  →  {after_count:,} after clipping"
+    )
+    ax.text(
+        0.5,
+        0.97,
+        annotation,
+        transform=ax.transAxes,
+        ha="center",
+        va="top",
+        fontsize=10,
+        bbox={"boxstyle": "round,pad=0.35", "facecolor": "white", "alpha": 0.9},
+    )
     save_figure(fig, figures_dir / "02_outlier_boxplot.png")
 
     counts = rfm["Segment"].value_counts().reindex(SEGMENT_ORDER, fill_value=0)
@@ -172,11 +190,18 @@ def run_analysis(
     # Array objects are represented by image_mean/std later; comparing thousands
     # of NumPy arrays in object-level describe is both noisy and very slow.
     describable = frame.drop(columns=["product_image"])
-    describable.describe(include="all").transpose().to_csv(
-        output_dir / "descriptive_statistics.csv"
+    descriptive = describable.describe(include="all").transpose()
+    descriptive.insert(0, "dtype", describable.dtypes.astype(str))
+    descriptive.to_csv(output_dir / "descriptive_statistics.csv")
+    (
+        frame.dtypes.astype(str)
+        .value_counts()
+        .rename_axis("dtype")
+        .rename("column_count")
+        .to_csv(output_dir / "dtype_summary.csv")
     )
 
-    missing_report = analyzer.handle_missing_values(strategy="group_mode", group_col="stock_code")
+    missing_report = analyzer.handle_missing(strategy="group_mode", group_col="stock_code")
     frame = analyzer.engineer_features()
     outlier_report = analyzer.treat_outliers(
         "amount", method="clip", output_col="amount_clean", positive_only=True
@@ -190,7 +215,9 @@ def run_analysis(
         ["count", "mean", "median", "std"]
     )
     group_stats.to_csv(output_dir / "segment_group_statistics.csv")
-    create_figures(frame, rfm, summary, figures_dir)
+    correlations = rfm[["Recency", "Frequency", "Monetary", "RFM_score"]].corr()
+    correlations.to_csv(output_dir / "rfm_correlations.csv")
+    create_figures(frame, rfm, summary, outlier_report, figures_dir)
 
     quality = {
         "overview": overview,

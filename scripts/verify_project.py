@@ -2,15 +2,21 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import struct
+import sys
 
 import nbformat
 import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.pipeline import DataAnalyzer
 
 
 def png_dimensions(path: Path) -> tuple[int, int]:
@@ -31,6 +37,12 @@ def main() -> None:
         ROOT / "outputs/rfm_customers.csv",
         ROOT / "outputs/segment_summary.csv",
         ROOT / "outputs/data_quality_report.json",
+        ROOT / "outputs/dtype_summary.csv",
+        ROOT / "outputs/rfm_correlations.csv",
+        ROOT / "outputs/notebook_execution_report.json",
+        ROOT / "outputs/notebook_execution.log",
+        ROOT / "figures/CAPTIONS.md",
+        ROOT / "docs/METHODOLOGY.md",
     ]
     missing = [str(path.relative_to(ROOT)) for path in required if not path.exists()]
     assert not missing, f"Missing required files: {missing}"
@@ -40,10 +52,19 @@ def main() -> None:
     assert data.shape[1] >= 8, data.shape
     assert {"customer_id", "order_date", "amount", "product_image"}.issubset(data.columns)
     pd.to_datetime(data["order_date"], errors="raise")
+    assert callable(getattr(DataAnalyzer, "handle_missing", None))
 
     rfm = pd.read_csv(ROOT / "outputs/rfm_customers.csv")
     assert set(rfm["Segment"]) == {"VIP", "Loyal", "New", "Churned"}
     assert rfm[["Recency", "Frequency", "Monetary"]].notna().all().all()
+
+    descriptive = pd.read_csv(ROOT / "outputs/descriptive_statistics.csv")
+    assert "dtype" in descriptive.columns
+    dtype_summary = pd.read_csv(ROOT / "outputs/dtype_summary.csv")
+    assert dtype_summary["column_count"].sum() == data.shape[1]
+
+    correlations = pd.read_csv(ROOT / "outputs/rfm_correlations.csv", index_col=0)
+    assert {"Recency", "Frequency", "Monetary", "RFM_score"}.issubset(correlations.columns)
 
     figures = sorted((ROOT / "figures").glob("*.png"))
     assert len(figures) >= 6, f"Expected 6+ PNG figures, got {len(figures)}"
@@ -62,6 +83,19 @@ def main() -> None:
     ]
     assert not errors, f"Notebook contains error outputs: {errors}"
 
+    execution = json.loads(
+        (ROOT / "outputs/notebook_execution_report.json").read_text(encoding="utf-8")
+    )
+    assert execution["status"] == "success"
+    assert execution["error_outputs"] == 0
+    assert execution["executed_code_cells"] == execution["code_cells"] == len(code_cells)
+    assert execution["sha256"] == hashlib.sha256(
+        (ROOT / "notebooks/analysis_report.ipynb").read_bytes()
+    ).hexdigest()
+    assert "NOTEBOOK EXECUTION SUCCESS" in (
+        ROOT / "outputs/notebook_execution.log"
+    ).read_text(encoding="utf-8")
+
     quality = json.loads((ROOT / "outputs/data_quality_report.json").read_text(encoding="utf-8"))
     assert quality["overview"]["rows"] == 25_000
     assert quality["missing_values"]["after"]["description"] == 0
@@ -72,8 +106,8 @@ def main() -> None:
     print(f"- RFM: {len(rfm):,} customers, 4 segments")
     print(f"- figures: {len(figures)} valid PNG files")
     print(f"- notebook: {len(code_cells)} executed code cells, 0 errors")
+    print("- evidence: dtype, correlations, captions, and nbclient execution log")
 
 
 if __name__ == "__main__":
     main()
-
