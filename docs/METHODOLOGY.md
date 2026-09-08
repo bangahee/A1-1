@@ -1,52 +1,53 @@
-# A1-1 methodology and risk notes
+# A1-1 방법론 및 위험 요소
 
-## Missing values
+## 결측치
 
-`description` is categorical and repeated within `stock_code`, so the product-group
-mode preserves product identity better than a global mode. Dropping rows would
-discard valid transaction amounts; mean imputation is not defined for product
-names. If a group has no observed name, the explicit sentinel `UNKNOWN PRODUCT`
-is used. `customer_id` is never imputed because it is an identifier.
+`description`은 범주형 데이터이며 동일한 `stock_code` 안에서 반복되므로, 전체 데이터의
+최빈값보다 상품 그룹별 최빈값을 사용하는 편이 상품의 정체성을 더 잘 보존한다. 행을
+삭제하면 유효한 거래 금액까지 사라지고, 상품명에는 평균값 대치가 정의될 수 없다. 어떤
+그룹에도 관측된 상품명이 없으면 명시적인 대체값인 `UNKNOWN PRODUCT`를 사용한다.
+`customer_id`는 식별자이므로 대치하지 않는다.
 
-This policy is not neutral. Mode imputation reduces within-group variation and
-can make between-product differences look stronger than they are. Production
-use should retain an imputation flag, compare before/after distributions, and
-prefer a governed product master when one exists.
+이 정책도 완전히 중립적이지는 않다. 최빈값 대치는 그룹 내부의 변동을 줄여 상품 그룹
+사이의 차이가 실제보다 더 커 보이게 할 수 있다. 운영 환경에서는 대치 여부를 나타내는
+플래그를 유지하고, 대치 전후 분포를 비교하며, 관리되는 상품 마스터 데이터가 있다면 이를
+우선 사용해야 한다.
 
-Text missingness is therefore imputed explicitly. Image arrays follow a stricter
-fail-fast rule: empty, unequal-length, NaN, or infinite arrays raise an error;
-invented zero pixels would bias `image_mean` and `image_std`.
+따라서 텍스트 결측치는 명시적으로 대치한다. 이미지 배열에는 더 엄격한 조기 실패
+(fail-fast) 규칙을 적용한다. 배열이 비어 있거나 길이가 서로 다르거나 `NaN` 또는 무한대가
+포함되어 있으면 오류를 발생시킨다. 임의로 0 픽셀을 채우면 `image_mean`과 `image_std`가
+편향될 수 있기 때문이다.
 
-## Outliers
+## 이상치
 
-IQR uses the middle 50% and does not require a normal distribution, making it
-more robust than mean/standard-deviation rules for right-skewed purchase values.
-Its limitation is that legitimate high-value orders in a skewed B2B distribution
-may be flagged. This project applies the rule only to positive purchases,
-retains returns, preserves the raw column, and clips rather than deletes rows.
+IQR은 데이터의 가운데 50%를 사용하고 정규분포를 가정하지 않으므로, 오른쪽으로 치우친
+구매 금액에 평균·표준편차 규칙보다 더 강건하다. 다만 한계도 있다. 왜도가 큰 B2B
+분포에서는 정상적인 고액 주문까지 이상치로 판정될 수 있다. 이 프로젝트는 양수 구매에만
+IQR 규칙을 적용하고, 반품은 유지하며, 원본 열을 보존하고, 행을 삭제하는 대신 상한값으로
+조정한다.
 
-## RFM thresholds
+## RFM 임계값
 
-Quartiles are a transparent exploratory baseline when no contractual or campaign
-thresholds exist. Four bins provide enough observations per bin and map cleanly
-to four operational labels. Three bins merge more customers; five create smaller
-groups and more boundary churn. Before deployment, compare quartiles with fixed
-30/90/180-day Recency, minimum order counts, margin, and LTV thresholds.
+계약이나 캠페인 기준 임계값이 없을 때 사분위수는 투명한 탐색적 기준이 된다. 네 구간은
+각 구간에 충분한 관측치를 유지하면서 네 가지 운영 세그먼트와 자연스럽게 연결된다. 세
+구간은 더 많은 고객을 하나로 합치고, 다섯 구간은 그룹을 더 작게 만들어 경계값 변화에
+따른 세그먼트 이동을 늘린다. 실제 운영에 적용하기 전에는 사분위수 기준을 Recency의 고정
+기준인 30일·90일·180일, 최소 주문 횟수, 마진, LTV 임계값과 비교해야 한다.
 
-## Vectorization and scale
+## 벡터화와 확장성
 
-`to_numpy()` and `np.stack()` create homogeneous contiguous arrays that avoid
-Python per-element dispatch and allow NumPy's compiled loops and SIMD-friendly
-operations. The trade-off is peak memory: a full dense image matrix must fit in
-RAM. At larger scale, store arrays in binary columns, process batches, retain
-`uint8`/`float32`, use memory maps, and parallelize only after profiling.
+`to_numpy()`와 `np.stack()`은 자료형이 동일한 연속 배열을 생성한다. 이 배열은 파이썬의
+원소별 디스패치를 피하고, NumPy의 컴파일된 반복문과 SIMD 친화적인 연산을 사용할 수 있게
+한다. 단점은 최대 메모리 사용량이다. 전체 고밀도 이미지 행렬이 RAM에 들어가야 한다.
+데이터 규모가 더 커지면 배열을 바이너리 열에 저장하고, 배치 단위로 처리하며,
+`uint8`/`float32` 자료형을 유지하고, 메모리 맵을 사용해야 한다. 병렬화는 프로파일링으로
+병목을 확인한 뒤에만 적용한다.
 
-## Predictive extension
+## 예측 모델 확장
 
-An auditable next target is `churn_90d`: no purchase in the 90 days after a
-cutoff. Candidate pre-cutoff features are RFM, average order value, return rate,
-unique products, active months, country, recent-window counts and values, and an
-imputation flag. Future orders, future amounts, and post-cutoff segments are
-excluded as leakage. Use chronological splits and prioritize Recall, PR-AUC,
-calibration, and campaign value over Accuracy alone.
-
+감사 가능한 다음 예측 타깃으로 `churn_90d`를 사용할 수 있다. 이는 기준일 이후 90일 동안
+구매가 없는지를 나타낸다. 기준일 이전의 후보 피처로는 RFM, 평균 주문 금액, 반품률, 고유
+상품 수, 활동 월수, 국가, 최근 기간의 구매 횟수와 금액, 결측치 대치 플래그가 있다. 미래
+주문, 미래 구매 금액, 기준일 이후의 세그먼트는 데이터 누수이므로 제외한다. 시간순으로
+데이터를 분할하고, 정확도(Accuracy)만 보지 말고 재현율(Recall), PR-AUC, 확률 보정
+(calibration), 캠페인 가치를 우선 평가해야 한다.
