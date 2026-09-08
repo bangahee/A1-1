@@ -145,4 +145,4 @@ tests/                    IQR, 결측, 벡터 특징, RFM 테스트
 - 반품/취소는 RFM 구매에서 제외했으며 별도 반품 분석이 필요합니다.
 - 2011년 12월은 9일까지만 포함된 부분 월입니다.
 
-완전한 실행 흐름은 [단계별 가이드](docs/STEP_BY_STEP.md), 선택 근거와 위험은 [방법론 문서](docs/METHODOLOGY.md), 분석 설명과 출력은 [실행 완료 노트북](notebooks/analysis_report.ipynb)에서 확인할 수 있습니다.
+실제 구현 순서는 [상세 구현 가이드](docs/IMPLEMENTATION_GUIDE.md), 빠른 학습 순서는 [단계별 가이드](docs/STEP_BY_STEP.md), 선택 근거와 위험은 [방법론 문서](docs/METHODOLOGY.md), 분석 설명과 출력은 [실행 완료 노트북](notebooks/analysis_report.ipynb)에서 확인할 수 있습니다.
