@@ -14,14 +14,18 @@ from nbclient import NotebookClient
 
 
 def markdown(text: str):
+    # 들여쓰기된 여러 줄 문자열의 바깥 공백을 제거해 마크다운 셀을 만든다.
     return nbf.v4.new_markdown_cell(text.strip())
 
 
 def code(text: str):
+    # 생성 스크립트와 제출 노트북의 코드를 한 곳에서 관리하기 위한 헬퍼다.
     return nbf.v4.new_code_cell(text.strip())
 
 
 def build_notebook() -> nbf.NotebookNode:
+    # 설명 셀과 실행 셀을 분석 순서대로 조립한다. 노트북을 수동 편집하지 않고
+    # 이 함수에서 재생성하면 코드와 실행 증거의 불일치를 줄일 수 있다.
     cells = [
         markdown(
             """
@@ -53,6 +57,7 @@ import pandas as pd
 
 from src.pipeline import DataAnalyzer
 
+# 경로를 상수로 모아 모든 셀이 같은 데이터와 산출물 위치를 사용하게 한다.
 pd.set_option("display.max_columns", 30)
 DATA_PATH = Path("data/online_retail_sample.csv")
 FIGURES = Path("figures")
@@ -63,6 +68,7 @@ OUTPUTS = Path("outputs")
         code(
             """
 analyzer = DataAnalyzer(DATA_PATH, outlier_threshold=1.5)
+# 로드 단계에서 최소 행·열 수, 필수 열, 날짜와 이미지 배열 형식을 검증한다.
 df = analyzer.load_data()
 print(f"shape: {df.shape[0]:,} rows × {df.shape[1]} columns")
 display(df.drop(columns="product_image").head())
@@ -72,6 +78,7 @@ df.info()
         code(
             """
 overview = analyzer.overview()
+# 타입별 열 수와 수치형 기술 통계를 함께 확인해 데이터 구조를 증명한다.
 display(pd.Series(overview["missing_by_column"], name="missing_count").to_frame())
 display(
     df.dtypes.astype(str)
@@ -81,6 +88,17 @@ display(
     .to_frame()
 )
 display(df.select_dtypes(include="number").describe().T)
+"""
+        ),
+        markdown(
+            """
+### 주요 수치형 변수의 기술 통계 해석
+
+- `quantity`는 평균 **9.51**, 중앙값 **3**, 표준편차 **43.22**, Q1 **1**, Q3 **10**이다. 평균이 중앙값보다 크고 표준편차가 큰 점은 소수의 대량 주문과 음수 반품 때문에 분포가 비대칭임을 보여준다. 따라서 일반적인 주문 수량은 평균보다 중앙값과 사분위 범위로 설명하는 편이 안전하다.
+- `unit_price`는 평균 **£5.11**, 중앙값 **£2.08**, 표준편차 **£120.07**, Q1 **£1.25**, Q3 **£4.13**이다. 중앙 50%는 비교적 좁지만 표준편차가 매우 크므로 일부 고가 품목이나 조정 거래가 전체 변동성을 크게 높인다.
+- `amount`는 평균 **£17.49**, 중앙값 **£9.75**, 표준편차 **£131.27**, Q1 **£3.38**, Q3 **£17.40**이다. 평균이 중앙값의 약 1.8배이고 표준편차도 크므로 오른쪽 꼬리가 긴 거래금액 분포임을 확인할 수 있다. 이 결과는 평균·표준편차만으로 이상치를 정하기보다 IQR을 사용하고 처리 전후를 함께 비교해야 한다는 근거가 된다.
+
+위 수치는 표본의 기술 통계이며, 반품과 취소를 포함한 원본 거래 기준이다. 고객 세분화용 Monetary에서는 뒤에서 유효 양수 구매와 IQR 조정 금액을 별도로 사용한다.
 """
         ),
         markdown(
@@ -96,6 +114,7 @@ display(df.select_dtypes(include="number").describe().T)
 missing_report = analyzer.handle_missing(strategy="group_mode", group_col="stock_code")
 display(pd.DataFrame(missing_report))
 
+# 금액, 단어 수, 이미지 평균·표준편차를 반복문 없이 벡터화해 생성한다.
 df = analyzer.engineer_features()
 display(df[["quantity", "unit_price", "amount", "description", "word_count", "image_mean", "image_std"]].head())
 """
@@ -127,6 +146,7 @@ IQR은 평균·표준편차처럼 정규분포를 가정하지 않고 중앙 50%
         code(
             """
 outliers_before = analyzer.detect_outliers("amount", positive_only=True)
+# 원본 amount는 보존하고 양수 구매의 IQR 극단값만 amount_clean에 클리핑한다.
 outlier_report = analyzer.treat_outliers(
     "amount", method="clip", output_col="amount_clean", positive_only=True
 )
@@ -138,6 +158,7 @@ display(Image(filename=str(FIGURES / "02_outlier_boxplot.png")))
         markdown("## 5. 여섯 종류 이상의 시각화"),
         code(
             """
+# 서로 다른 분석 목적을 가진 정적 그래프를 순서대로 노트북에 표시한다.
 for filename in [
     "01_amount_histogram.png",
     "03_segment_bar.png",
@@ -166,6 +187,7 @@ for filename in [
         ),
         code(
             """
+# 마지막 유효 구매일 다음 날을 기준으로 RFM을 계산하고 네 세그먼트로 분류한다.
 rfm = analyzer.calculate_rfm(amount_col="amount_clean")
 segment_summary = analyzer.segment_summary()
 display(rfm.head(10))
@@ -181,6 +203,7 @@ display(segment_summary.style.format({
         ),
         code(
             """
+# 세그먼트별 count/mean/median/std를 계산해 해석의 수치 근거를 남긴다.
 group_statistics = rfm.groupby("Segment")[["Recency", "Frequency", "Monetary"]].agg(
     ["count", "mean", "median", "std"]
 )
@@ -238,6 +261,7 @@ def main() -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
     notebook = build_notebook()
+    # nbclient가 프로젝트 루트를 작업 경로로 사용해 모든 코드 셀을 실제 실행한다.
     client = NotebookClient(
         notebook,
         timeout=600,
@@ -250,6 +274,7 @@ def main() -> None:
         client.execute()
         nbf.write(notebook, output)
     except Exception as exc:
+        # 실행 실패도 구조화된 JSON과 로그로 남겨 원인을 재현할 수 있게 한다.
         failed_report = {
             "status": "failed",
             "started_at": started_at.isoformat(),
@@ -276,6 +301,7 @@ def main() -> None:
         for item in cell.get("outputs", [])
         if item.output_type == "error"
     ]
+    # 실행된 노트북의 해시를 저장해 이후 수동 변경 여부를 검증한다.
     notebook_hash = hashlib.sha256(output.read_bytes()).hexdigest()
     finished_at = datetime.now().astimezone()
     report = {

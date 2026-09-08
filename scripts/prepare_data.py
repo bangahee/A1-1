@@ -25,6 +25,7 @@ RENAME = {
 
 
 def acquire_xlsx(raw_xlsx: Path | None, cache_dir: Path) -> Path:
+    # 사용자가 원본 경로를 주면 네트워크를 사용하지 않고 해당 파일을 우선한다.
     if raw_xlsx is not None:
         if not raw_xlsx.exists():
             raise FileNotFoundError(raw_xlsx)
@@ -33,6 +34,7 @@ def acquire_xlsx(raw_xlsx: Path | None, cache_dir: Path) -> Path:
     cache_dir.mkdir(parents=True, exist_ok=True)
     archive = cache_dir / "online_retail.zip"
     target = cache_dir / "Online Retail.xlsx"
+    # 이미 내려받은 압축 파일과 엑셀 파일을 재사용해 반복 실행을 빠르게 한다.
     if not archive.exists():
         print(f"Downloading {DATA_URL}")
         urlretrieve(DATA_URL, archive)
@@ -45,6 +47,8 @@ def acquire_xlsx(raw_xlsx: Path | None, cache_dir: Path) -> Path:
 def deterministic_images(stock_codes: pd.Series, size: int = 64) -> np.ndarray:
     """Create repeatable grayscale arrays from product identifiers."""
 
+    # 상품 코드의 안정적인 해시를 행별 seed처럼 사용한다. 같은 상품 코드는
+    # 실행할 때마다 같은 8x8 교육용 픽셀 배열을 생성하므로 결과가 재현된다.
     seeds = pd.util.hash_pandas_object(stock_codes.astype(str), index=False).to_numpy(
         dtype=np.uint64
     )
@@ -59,6 +63,7 @@ def prepare(raw_xlsx: Path, output_csv: Path, sample_size: int, seed: int) -> pd
     if len(source) < sample_size:
         raise ValueError(f"sample_size={sample_size:,} exceeds {len(source):,} rows")
 
+    # seed가 고정된 표본을 시간순으로 정렬해 동일 입력에서 동일 CSV를 만든다.
     sample = (
         source.sample(n=sample_size, random_state=seed)
         .rename(columns=RENAME)
@@ -69,6 +74,7 @@ def prepare(raw_xlsx: Path, output_csv: Path, sample_size: int, seed: int) -> pd
     )
     sample.insert(0, "row_id", np.arange(len(sample), dtype=np.int64))
     sample["amount"] = sample["quantity"].to_numpy() * sample["unit_price"].to_numpy()
+    # 실제 상품 사진이 아니라 NumPy 배열 처리 능력을 검증하기 위한 파생 데이터다.
     pixels = deterministic_images(sample["stock_code"], size=64)
     sample["product_image"] = [
         "[" + " ".join(row.astype(str)) + "]" for row in pixels
@@ -98,4 +104,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

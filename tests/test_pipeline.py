@@ -13,6 +13,7 @@ class DataAnalyzerTests(unittest.TestCase):
         self.temp_dir = TemporaryDirectory()
         self.path = Path(self.temp_dir.name) / "sample.csv"
         rows = []
+        # 결측 상품명, 양·음수 극단값, 반복 주문을 한 표본에 넣어 핵심 분기를 검증한다.
         for i in range(16):
             rows.append(
                 {
@@ -36,6 +37,7 @@ class DataAnalyzerTests(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def test_image_parser_and_vectorized_features(self):
+        # 평탄화 이미지 배열과 숫자·텍스트 특징이 행 단위로 올바르게 계산되는지 확인한다.
         self.analyzer.handle_missing()
         enriched = self.analyzer.engineer_features()
         np.testing.assert_allclose(enriched["image_mean"], 15.0)
@@ -49,6 +51,7 @@ class DataAnalyzerTests(unittest.TestCase):
         self.assertEqual(self.analyzer.df.loc[1, "description"], "RED CUP SET")
 
     def test_iqr_detection_and_clipping(self):
+        # 양수 구매의 극단값은 탐지되고, 원본을 보존한 정제 열에서는 제거되어야 한다.
         self.analyzer.handle_missing()
         self.analyzer.engineer_features()
         outliers = self.analyzer.detect_outliers("amount", positive_only=True)
@@ -60,6 +63,7 @@ class DataAnalyzerTests(unittest.TestCase):
         self.assertEqual(report["after_count"], 0)
 
     def test_rfm_has_all_scores_and_valid_reference_date(self):
+        # 명시적 기준일을 사용해 Recency와 네 세그먼트의 계약을 검증한다.
         self.analyzer.handle_missing()
         self.analyzer.engineer_features()
         rfm = self.analyzer.calculate_rfm(reference_date="2024-02-01")

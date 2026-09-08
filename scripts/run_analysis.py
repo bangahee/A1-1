@@ -9,6 +9,8 @@ import os
 from pathlib import Path
 from typing import Any
 
+# 서버나 CI처럼 홈 디렉터리에 쓸 수 없는 환경에서도 Matplotlib 캐시를
+# 프로젝트 내부에 만들 수 있도록 설정한다.
 os.environ.setdefault("MPLCONFIGDIR", str(Path(".matplotlib").resolve()))
 
 import matplotlib
@@ -32,6 +34,7 @@ PALETTE = {
 
 
 def json_default(value: Any) -> Any:
+    # NumPy 스칼라와 Timestamp를 표준 JSON 타입으로 바꾸는 직렬화 경계다.
     if isinstance(value, (np.integer, np.floating)):
         return value.item()
     if isinstance(value, pd.Timestamp):
@@ -40,6 +43,7 @@ def json_default(value: Any) -> Any:
 
 
 def save_figure(fig: plt.Figure, path: Path) -> None:
+    # 모든 그래프를 동일한 해상도와 여백 정책으로 저장하고 메모리를 즉시 해제한다.
     fig.tight_layout()
     fig.savefig(path, dpi=180, bbox_inches="tight", facecolor="white")
     plt.close(fig)
@@ -54,6 +58,8 @@ def create_figures(
 ) -> None:
     sns.set_theme(style="whitegrid", context="notebook")
 
+    # 극단적인 꼬리가 본문 분포를 가리지 않도록 히스토그램은 양수 구매의
+    # 99분위까지 표시하되, 이상치 계산 자체에는 전체 양수 값을 사용한다.
     purchases = frame.loc[frame["amount"].gt(0), "amount"]
     upper_99 = purchases.quantile(0.99)
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -61,6 +67,7 @@ def create_figures(
     ax.set(title="Purchase amount distribution (up to 99th percentile)", xlabel="Amount (GBP)")
     save_figure(fig, figures_dir / "01_amount_histogram.png")
 
+    # 동일한 양수 거래의 처리 전·후 금액을 비교해 IQR 클리핑 효과를 보여준다.
     positive = frame.loc[frame["amount"].gt(0), ["amount", "amount_clean"]].rename(
         columns={"amount": "Before", "amount_clean": "After IQR clipping"}
     )
@@ -117,6 +124,7 @@ def create_figures(
     ax.set(xscale="log", yscale="log", title="Frequency vs monetary value by segment")
     save_figure(fig, figures_dir / "05_rfm_scatter.png")
 
+    # 월별 합계에는 이상치 조정 금액을 사용하며, 원본 날짜를 월말 단위로 재표본화한다.
     monthly = (
         frame.loc[frame["amount"].gt(0)]
         .set_index("order_date")
@@ -145,6 +153,8 @@ def create_figures(
 
 
 def build_insights(summary: pd.DataFrame) -> dict[str, dict[str, str]]:
+    # 각 제안을 근거-실행-기대효과-추가 검증 데이터 구조로 고정해
+    # 단순한 의견이 아니라 검증 가능한 비즈니스 가설로 만든다.
     vip = summary.loc["VIP"]
     churned = summary.loc["Churned"]
     new = summary.loc["New"]
@@ -180,6 +190,8 @@ def run_analysis(
     output_dir.mkdir(parents=True, exist_ok=True)
     figures_dir.mkdir(parents=True, exist_ok=True)
 
+    # 전체 분석은 로드 → 탐색 → 결측 처리 → 특징 생성 → 이상치 처리 →
+    # RFM 집계 → 시각화·리포트 저장 순서로 재현 가능하게 실행된다.
     analyzer = DataAnalyzer(data_path, outlier_threshold=1.5)
     frame = analyzer.load_data()
     overview = analyzer.overview()
@@ -219,6 +231,7 @@ def run_analysis(
     correlations.to_csv(output_dir / "rfm_correlations.csv")
     create_figures(frame, rfm, summary, outlier_report, figures_dir)
 
+    # 제출 후에도 데이터 규모와 정제 결과를 기계적으로 검증할 수 있게 저장한다.
     quality = {
         "overview": overview,
         "missing_values": missing_report,

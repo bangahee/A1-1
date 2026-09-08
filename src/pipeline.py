@@ -14,6 +14,8 @@ import numpy as np
 import pandas as pd
 
 
+# 분석 파이프라인이 기대하는 최소 데이터 계약이다. 입력 단계에서 검증해
+# 잘못된 스키마가 후속 통계나 RFM 결과를 조용히 왜곡하지 않게 한다.
 REQUIRED_COLUMNS = {
     "invoice_no",
     "stock_code",
@@ -68,6 +70,8 @@ class DataAnalyzer:
         far more precision than the source 0-255 grayscale-like values require.
         """
 
+        # CSV에는 이미지가 평탄화된 문자열로 저장되므로, 모든 행을 동일한
+        # float32 배열로 복원한 뒤 한 번에 벡터 연산할 수 있게 준비한다.
         if isinstance(value, np.ndarray):
             return value.astype(np.float32, copy=False)
         if pd.isna(value):
@@ -83,6 +87,8 @@ class DataAnalyzer:
     def load_data(self) -> pd.DataFrame:
         """Load CSV data, parse dates/images, and enforce the mission schema."""
 
+        # 파일 존재 여부, 필수 열, 최소 크기를 가장 앞에서 확인하는 fail-fast
+        # 방식으로 불완전한 데이터가 분석 단계까지 흘러가는 것을 막는다.
         if not self.data_path.exists():
             raise FileNotFoundError(self.data_path)
         frame = pd.read_csv(self.data_path, low_memory=False)
@@ -96,6 +102,7 @@ class DataAnalyzer:
                 f"Expected at least {self.min_columns} columns, got {frame.shape[1]}"
             )
 
+        # 변환할 수 없는 날짜는 NaT로 표시해 결측치 처리 단계에서 일관되게 다룬다.
         frame["order_date"] = pd.to_datetime(frame["order_date"], errors="coerce")
         frame["product_image"] = frame["product_image"].map(self.parse_image_array)
         self.df = frame
@@ -105,6 +112,7 @@ class DataAnalyzer:
         """Return compact, serializable exploration facts."""
 
         frame = self._require_loaded()
+        # row_id가 있으면 원본 행의 정체성을 기준으로 중복을 확인한다.
         return {
             "rows": int(frame.shape[0]),
             "columns": int(frame.shape[1]),
@@ -132,6 +140,8 @@ class DataAnalyzer:
         if strategy == "group_mode":
             if group_col not in frame:
                 raise KeyError(group_col)
+            # 같은 상품 코드는 같은 상품명을 공유한다는 도메인 가정을 사용한다.
+            # 전역 최빈값보다 상품 정체성을 보존하면서 결측 설명을 대치할 수 있다.
             group_value = frame.groupby(group_col, dropna=False)["description"].transform(
                 lambda values: values.mode().iat[0] if not values.mode().empty else np.nan
             )
@@ -159,6 +169,7 @@ class DataAnalyzer:
         """Create numeric, text, and image statistics with vector operations."""
 
         frame = self._require_loaded()
+        # 숫자 특징은 Python 반복문 대신 NumPy 배열끼리 곱해 벡터화한다.
         frame["amount"] = frame["quantity"].to_numpy() * frame["unit_price"].to_numpy()
         frame["word_count"] = (
             frame["description"].fillna("").astype(str).str.split().str.len().astype("int64")
@@ -167,6 +178,8 @@ class DataAnalyzer:
         lengths = frame["product_image"].map(len)
         if lengths.nunique() != 1 or lengths.iat[0] == 0:
             raise ValueError("All product_image arrays must have one non-zero length")
+        # 행별 배열을 하나의 2차원 행렬로 쌓아 이미지별 평균과 표준편차를
+        # axis=1 연산 한 번으로 계산한다.
         image_matrix = np.stack(frame["product_image"].to_numpy()).astype(
             np.float32, copy=False
         )
@@ -189,6 +202,8 @@ class DataAnalyzer:
         factor = self.outlier_threshold if threshold is None else float(threshold)
         values = pd.to_numeric(frame[column], errors="coerce").dropna()
         if positive_only:
+            # 반품·취소는 음수라는 별도 의미가 있으므로 구매금액 이상치 계산에서는
+            # 양수 거래만 사용하고 음수 행은 원본 그대로 보존한다.
             values = values[values > 0]
         if values.empty:
             raise ValueError(f"No values available for {column}")
@@ -234,6 +249,7 @@ class DataAnalyzer:
 
         if method == "clip":
             target = output_col or f"{column}_clean"
+            # 원본 열을 덮어쓰지 않고 정제 열을 별도로 만들어 처리 전후를 검증한다.
             frame[target] = values
             eligible = values.gt(0) if positive_only else values.notna()
             frame.loc[eligible, target] = values.loc[eligible].clip(bounds.lower, bounds.upper)
@@ -267,6 +283,8 @@ class DataAnalyzer:
 
         frame = self._require_loaded()
         invoice = frame["invoice_no"].astype(str)
+        # 고객 식별이 가능하고 실제 구매로 볼 수 있는 행만 RFM 집계에 사용한다.
+        # 주문번호가 C로 시작하는 취소 주문과 음수/0 수량·금액은 제외한다.
         valid = (
             frame[customer_col].notna()
             & frame[date_col].notna()
@@ -279,6 +297,8 @@ class DataAnalyzer:
     @staticmethod
     def _quartile_score(series: pd.Series, *, high_is_good: bool) -> pd.Series:
         labels = [1, 2, 3, 4] if high_is_good else [4, 3, 2, 1]
+        # 동일 값이 많아 qcut 경계가 겹치는 문제를 피하려고 먼저 안정적인 순위를
+        # 만든다. Recency는 낮을수록 좋으므로 점수 방향을 반대로 배정한다.
         ranked = series.rank(method="first")
         return pd.qcut(ranked, q=4, labels=labels).astype("int64")
 
@@ -295,12 +315,15 @@ class DataAnalyzer:
         transactions = self.rfm_transactions(customer_col, date_col, amount_col)
         if transactions.empty:
             raise ValueError("No valid transactions remain for RFM")
+        # 기준일을 지정하지 않으면 데이터가 관측된 마지막 구매일의 다음 날을
+        # 사용하여 모든 고객의 Recency가 0 이상이 되게 한다.
         analysis_date = (
             pd.Timestamp(reference_date)
             if reference_date is not None
             else transactions[date_col].max().normalize() + pd.Timedelta(days=1)
         )
 
+        # 고객별 마지막 구매일, 고유 주문 수, 조정 구매금액 합계를 한 번에 집계한다.
         rfm = transactions.groupby(customer_col).agg(
             last_purchase=(date_col, "max"),
             Frequency=("invoice_no", "nunique"),
@@ -313,6 +336,8 @@ class DataAnalyzer:
         rfm["M_score"] = self._quartile_score(rfm["Monetary"], high_is_good=True)
         rfm["RFM_score"] = rfm[["R_score", "F_score", "M_score"]].sum(axis=1)
 
+        # 조건은 위에서부터 우선 적용된다. 최근성·빈도·금액이 모두 높은 고객을
+        # VIP로 먼저 분리한 뒤 신규, 이탈 위험, 나머지 충성 고객을 구분한다.
         conditions = [
             rfm["R_score"].ge(3) & rfm["F_score"].ge(3) & rfm["M_score"].ge(3),
             rfm["R_score"].ge(3) & rfm["F_score"].le(2),
@@ -336,6 +361,7 @@ class DataAnalyzer:
             mean_monetary=("Monetary", "mean"),
             total_monetary=("Monetary", "sum"),
         )
+        # 고객 비중과 매출 비중을 함께 제공해 규모와 경제적 중요도를 구분한다.
         summary["customer_share"] = summary["customers"] / summary["customers"].sum()
         summary["revenue_share"] = summary["total_monetary"] / summary["total_monetary"].sum()
         return summary.sort_values("total_monetary", ascending=False)
