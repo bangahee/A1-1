@@ -1,0 +1,73 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import unittest
+
+import numpy as np
+import pandas as pd
+
+from src.pipeline import DataAnalyzer
+
+
+class DataAnalyzerTests(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = TemporaryDirectory()
+        self.path = Path(self.temp_dir.name) / "sample.csv"
+        rows = []
+        for i in range(16):
+            rows.append(
+                {
+                    "row_id": i,
+                    "invoice_no": f"I{i // 2}",
+                    "stock_code": "A" if i < 8 else "B",
+                    "description": None if i == 1 else "RED CUP SET",
+                    "quantity": 100 if i == 15 else (-100 if i == 14 else i % 4 + 1),
+                    "order_date": f"2024-01-{i + 1:02d}",
+                    "unit_price": 2.5,
+                    "customer_id": 10 + i % 5,
+                    "country": "UK",
+                    "product_image": "[0 10 20 30]",
+                }
+            )
+        pd.DataFrame(rows).to_csv(self.path, index=False)
+        self.analyzer = DataAnalyzer(self.path, min_rows=1)
+        self.analyzer.load_data()
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def test_image_parser_and_vectorized_features(self):
+        self.analyzer.handle_missing_values()
+        enriched = self.analyzer.engineer_features()
+        np.testing.assert_allclose(enriched["image_mean"], 15.0)
+        self.assertEqual(enriched.loc[0, "word_count"], 3)
+        self.assertEqual(enriched.loc[0, "amount"], 2.5)
+
+    def test_groupwise_missing_description(self):
+        report = self.analyzer.handle_missing_values()
+        self.assertEqual(report["before"]["description"], 1)
+        self.assertEqual(report["after"]["description"], 0)
+        self.assertEqual(self.analyzer.df.loc[1, "description"], "RED CUP SET")
+
+    def test_iqr_detection_and_clipping(self):
+        self.analyzer.handle_missing_values()
+        self.analyzer.engineer_features()
+        outliers = self.analyzer.detect_outliers("amount", positive_only=True)
+        self.assertIn(15, outliers.index)
+        report = self.analyzer.treat_outliers(
+            "amount", output_col="amount_clean", positive_only=True
+        )
+        self.assertGreater(report["before_count"], 0)
+        self.assertEqual(report["after_count"], 0)
+
+    def test_rfm_has_all_scores_and_valid_reference_date(self):
+        self.analyzer.handle_missing_values()
+        self.analyzer.engineer_features()
+        rfm = self.analyzer.calculate_rfm(reference_date="2024-02-01")
+        expected = {"Recency", "Frequency", "Monetary", "R_score", "F_score", "M_score", "Segment"}
+        self.assertTrue(expected.issubset(rfm.columns))
+        self.assertTrue(rfm["Recency"].ge(0).all())
+        self.assertTrue(rfm["Segment"].isin(["VIP", "Loyal", "New", "Churned"]).all())
+
+
+if __name__ == "__main__":
+    unittest.main()

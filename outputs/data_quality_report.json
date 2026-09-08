@@ -1,0 +1,76 @@
+{
+  "overview": {
+    "rows": 25000,
+    "columns": 14,
+    "duplicate_rows": 0,
+    "date_min": "2010-12-01T08:26:00",
+    "date_max": "2011-12-09T12:50:00",
+    "missing_by_column": {
+      "row_id": 0,
+      "source_row_id": 0,
+      "invoice_no": 0,
+      "stock_code": 0,
+      "description": 65,
+      "quantity": 0,
+      "order_date": 0,
+      "unit_price": 0,
+      "customer_id": 6300,
+      "country": 0,
+      "amount": 0,
+      "product_image": 0,
+      "image_height": 0,
+      "image_width": 0
+    }
+  },
+  "missing_values": {
+    "before": {
+      "row_id": 0,
+      "source_row_id": 0,
+      "invoice_no": 0,
+      "stock_code": 0,
+      "description": 65,
+      "quantity": 0,
+      "order_date": 0,
+      "unit_price": 0,
+      "customer_id": 6300,
+      "country": 0,
+      "amount": 0,
+      "product_image": 0,
+      "image_height": 0,
+      "image_width": 0
+    },
+    "after": {
+      "row_id": 0,
+      "source_row_id": 0,
+      "invoice_no": 0,
+      "stock_code": 0,
+      "description": 0,
+      "quantity": 0,
+      "order_date": 0,
+      "unit_price": 0,
+      "customer_id": 6300,
+      "country": 0,
+      "amount": 0,
+      "product_image": 0,
+      "image_height": 0,
+      "image_width": 0
+    }
+  },
+  "outliers": {
+    "column": "amount",
+    "method": "clip",
+    "output_column": "amount_clean",
+    "before_count": 1925,
+    "after_count": 0,
+    "bounds": {
+      "q1": 3.75,
+      "q3": 17.700000000000003,
+      "iqr": 13.950000000000003,
+      "lower": -17.175000000000004,
+      "upper": 38.62500000000001
+    }
+  },
+  "rfm_reference_date": "2011-12-10T00:00:00",
+  "valid_rfm_transactions": 18270,
+  "rfm_customers": 3251
+}

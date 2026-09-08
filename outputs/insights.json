@@ -1,0 +1,20 @@
+{
+  "vip_retention": {
+    "evidence": "VIPs are 27.8% of customers and generate 63.4% of adjusted revenue; mean frequency is 6.0 orders.",
+    "action": "Offer tiered early access and service benefits to VIP customers.",
+    "expected_effect": "Protect revenue concentration and improve repeat purchase rate.",
+    "validation_data": "Campaign/control repeat-purchase rate, gross margin, benefit cost, and 90-day churn."
+  },
+  "churn_reactivation": {
+    "evidence": "Churned customers are 50.0% of customers with mean recency 179.5 days.",
+    "action": "Run a randomized reactivation test with a time-limited incentive.",
+    "expected_effect": "Recover dormant customers without discounting the entire base.",
+    "validation_data": "Holdout reactivation, incremental revenue, contribution margin, unsubscribe rate, and churn-reason survey."
+  },
+  "new_customer_onboarding": {
+    "evidence": "The New segment contains 531 customers (16.3%) and median frequency 1.",
+    "action": "Trigger product education and a second-order recommendation within 14 days.",
+    "expected_effect": "Increase conversion from first purchase to the second order.",
+    "validation_data": "14/30-day second-order rate, recommendation click-through, returns, and cohort retention."
+  }
+}
