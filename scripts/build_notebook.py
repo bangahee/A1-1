@@ -158,8 +158,13 @@ display(Image(filename=str(FIGURES / "02_outlier_boxplot.png")))
         markdown("## 5. 여섯 종류 이상의 시각화"),
         code(
             """
+# 제목과 x/y축 레이블 증거를 표로 먼저 제시한 뒤 실제 PNG를 표시한다.
+visualization_evidence = pd.read_csv(OUTPUTS / "visualization_evidence.csv")
+display(visualization_evidence)
+
 # 서로 다른 분석 목적을 가진 정적 그래프를 순서대로 노트북에 표시한다.
 for filename in [
+    "02_outlier_boxplot.png",
     "01_amount_histogram.png",
     "03_segment_bar.png",
     "04_rfm_heatmap.png",

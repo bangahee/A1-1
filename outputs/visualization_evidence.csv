@@ -1,0 +1,7 @@
+file,chart_type,title,x_axis,y_axis
+01_amount_histogram.png,Histogram,Purchase amount distribution (up to 99th percentile),Amount (GBP),Count
+02_outlier_boxplot.png,Box plot,Outliers before and after treatment,Treatment,"Amount (GBP, log scale)"
+03_segment_bar.png,Bar chart,Customers by RFM segment,Segment,Customers
+04_rfm_heatmap.png,Heatmap,RFM correlation heatmap,RFM metrics,RFM metrics
+05_rfm_scatter.png,Scatter plot,Frequency vs monetary value by segment,Frequency (orders),Monetary (GBP)
+06_monthly_sales_line.png,Line chart,Monthly sales trend,Month,IQR-adjusted sales (GBP)

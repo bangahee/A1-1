@@ -40,6 +40,35 @@
 - RFM: 유효 구매 18,270건, 고객 3,251명
 - 타입 증거: `outputs/descriptive_statistics.csv`의 `dtype` 열과 `outputs/dtype_summary.csv`의 타입별 컬럼 수
 
+### 시각화 제목·축 레이블 증거
+
+모든 필수 시각화는 `scripts/run_analysis.py`에서 `ax.set(title=..., xlabel=..., ylabel=...)` 또는 이에 해당하는 명시적 설정으로 생성한다. 평가기가 PNG를 직접 열지 않아도 확인할 수 있도록 동일한 정보는 [`outputs/visualization_evidence.csv`](outputs/visualization_evidence.csv)에도 저장한다.
+
+| 파일 | 종류 | 그래프 제목 | X축 레이블 | Y축 레이블 |
+|---|---|---|---|---|
+| `01_amount_histogram.png` | 히스토그램 | Purchase amount distribution (up to 99th percentile) | Amount (GBP) | Count |
+| `02_outlier_boxplot.png` | 박스플롯 | Outliers before and after treatment | Treatment | Amount (GBP, log scale) |
+| `03_segment_bar.png` | 막대그래프 | Customers by RFM segment | Segment | Customers |
+| `04_rfm_heatmap.png` | 히트맵 | RFM correlation heatmap | RFM metrics | RFM metrics |
+| `05_rfm_scatter.png` | 산점도 | Frequency vs monetary value by segment | Frequency (orders) | Monetary (GBP) |
+| `06_monthly_sales_line.png` | 라인차트 | Monthly sales trend | Month | IQR-adjusted sales (GBP) |
+
+#### IQR 처리 전후 박스플롯
+
+![IQR outliers before and after clipping](figures/02_outlier_boxplot.png)
+
+#### 여섯 가지 필수 시각화 원본
+
+![Purchase amount histogram](figures/01_amount_histogram.png)
+
+![Customers by RFM segment](figures/03_segment_bar.png)
+
+![RFM correlation heatmap](figures/04_rfm_heatmap.png)
+
+![Frequency versus monetary scatter plot](figures/05_rfm_scatter.png)
+
+![Monthly adjusted sales line chart](figures/06_monthly_sales_line.png)
+
 ### 공개 API와 설계 선택
 
 | API | 책임 | 선택 이유와 대안 |

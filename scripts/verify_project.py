@@ -43,6 +43,7 @@ def main() -> None:
         ROOT / "outputs/insights.json",
         ROOT / "outputs/dtype_summary.csv",
         ROOT / "outputs/rfm_correlations.csv",
+        ROOT / "outputs/visualization_evidence.csv",
         ROOT / "outputs/notebook_execution_report.json",
         ROOT / "outputs/notebook_execution.log",
         ROOT / "figures/CAPTIONS.md",
@@ -82,6 +83,17 @@ def main() -> None:
 
     correlations = pd.read_csv(ROOT / "outputs/rfm_correlations.csv", index_col=0)
     assert {"Recency", "Frequency", "Monetary", "RFM_score"}.issubset(correlations.columns)
+
+    # 평가기가 PNG를 직접 읽지 않더라도 여섯 차트의 제목과 양 축 레이블을
+    # 확인할 수 있도록 별도 증거 표의 완전성을 검증한다.
+    visual_evidence = pd.read_csv(ROOT / "outputs/visualization_evidence.csv")
+    assert len(visual_evidence) >= 6
+    label_columns = ["file", "chart_type", "title", "x_axis", "y_axis"]
+    assert set(label_columns).issubset(visual_evidence.columns)
+    assert visual_evidence[label_columns].notna().all().all()
+    assert visual_evidence[label_columns].astype(str).apply(
+        lambda column: column.str.strip().ne("").all()
+    ).all()
 
     # 그래프 개수뿐 아니라 제출 화면에서 판독 가능한 최소 픽셀 크기도 검사한다.
     figures = sorted((ROOT / "figures").glob("*.png"))

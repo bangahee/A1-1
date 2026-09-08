@@ -72,7 +72,7 @@
 | 히트맵 | 완료 | `figures/04_rfm_heatmap.png` |
 | 산점도 | 완료 | `figures/05_rfm_scatter.png` |
 | 라인차트 | 완료 | `figures/06_monthly_sales_line.png` |
-| 제목과 축 레이블 | 완료 | 생성 코드와 PNG 결과, `figures/CAPTIONS.md` |
+| 제목과 축 레이블 | 완료 | 생성 코드, PNG 결과, `figures/CAPTIONS.md`, `outputs/visualization_evidence.csv` |
 | 추가 요약 표 | 완료 | `figures/07_segment_summary_table.png` |
 
 ## 8. RFM 고객 세분화
