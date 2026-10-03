@@ -68,7 +68,7 @@ PDF 요구사항을 먼저 코드와 산출물에 연결했다.
 
 ## 2. 개발 환경 구성
 
-프로젝트 루트에서 가상환경을 만들고 허용된 패키지를 설치했다.
+프로젝트 루트에서 가상환경을 만든다. 실제 분석 코드와 단위 테스트만 실행할 때는 과제에서 허용한 분석 라이브러리만 설치한다.
 
 ~~~bash
 python3 -m venv .venv
@@ -76,11 +76,25 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ~~~
 
+`requirements.txt`의 역할:
+
 - NumPy: 배열 파싱과 벡터화
 - Pandas: CSV, 결측치, 그룹 집계, RFM
 - Matplotlib·Seaborn: 정적 시각화
-- Jupyter·nbclient: 노트북 생성과 실행 검증
+
+노트북 생성·실행 검증과 원본 Excel 재생성까지 수행하려면 선택적인 개발 환경을 설치한다.
+
+~~~bash
+python -m pip install -r requirements-dev.txt
+~~~
+
+`requirements-dev.txt`의 역할:
+
+- 첫 줄의 `-r requirements.txt`: 기본 분석 라이브러리 포함
+- Jupyter·nbformat·nbclient: 노트북 생성·저장·실행 검증
 - openpyxl: 원본 Excel 로드
+
+따라서 전체 재현 시 두 파일을 각각 설치할 필요는 없다. `requirements-dev.txt` 하나를 설치하면 분석 환경과 개발 도구가 함께 준비된다.
 
 OpenCV, Pillow, Scikit-learn, NLTK, 자동 EDA 라이브러리는 분석 코드에 사용하지 않았다.
 

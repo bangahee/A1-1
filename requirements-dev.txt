@@ -1,3 +1,5 @@
+# Optional repository development, notebook build, and verification tools.
+# This includes the assignment/runtime libraries from requirements.txt.
 -r requirements.txt
 
 jupyter>=1.0

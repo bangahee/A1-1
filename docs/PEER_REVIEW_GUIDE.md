@@ -4,6 +4,12 @@
 
 ## 검토 전에 실행할 것
 
+노트북 실행 증거와 검증기까지 확인하는 동료 검토에서는 선택적인 개발 환경을 설치한다. `requirements-dev.txt`가 `requirements.txt`를 포함하므로 두 파일을 따로 설치하지 않는다.
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
 프로젝트 루트에서 다음 명령을 실행한다.
 
 ```bash
@@ -18,6 +24,11 @@ python scripts/verify_project.py
 - 분석 파이프라인 정상 종료 및 PNG 7개 생성
 - `A1-1 verification passed`
 - 실행 완료 노트북의 코드 셀 8개, 오류 출력 0개
+
+의존성 파일을 설명할 때 사용할 구분:
+
+- `requirements.txt`: 과제 실행용 NumPy·Pandas·Matplotlib·Seaborn
+- `requirements-dev.txt`: 선택적인 노트북 빌드·검증·원본 Excel 재생성 도구
 
 ## 1. 프로젝트를 30초 안에 소개하기
 

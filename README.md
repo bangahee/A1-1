@@ -169,6 +169,15 @@ IQR은 중앙 50%에 기반하므로 평균·표준편차 방식처럼 정규분
 
 Python 3.8 이상이 필요합니다.
 
+두 requirements 파일은 중복 파일이 아니라 설치 목적을 분리합니다.
+
+| 파일 | 용도 | 언제 설치하는가 |
+|---|---|---|
+| `requirements.txt` | 과제 실행에 허용된 분석 라이브러리 | 단위 테스트와 `scripts.run_analysis`만 실행할 때 |
+| `requirements-dev.txt` | 선택적인 노트북 빌드·실행 검증·원본 Excel 재생성 도구 | 제출 결과 전체를 재생성하거나 저장소를 개발할 때 |
+
+`requirements-dev.txt` 첫 줄은 `-r requirements.txt`이므로 기본 분석 라이브러리도 함께 설치합니다. 전체 재현 환경에서는 두 파일을 차례로 설치할 필요 없이 `requirements-dev.txt`만 설치하면 됩니다.
+
 ### 필수 분석 환경
 
 실제 데이터 분석에는 과제에서 허용한 **NumPy, Pandas, Matplotlib, Seaborn**만 사용합니다.
@@ -207,7 +216,7 @@ Windows PowerShell에서는 가상환경 활성화 명령을 다음과 같이 �
 
 ### 개발 및 전체 재현 환경
 
-노트북 재생성, 실행 검증, 원본 Excel 데이터 재처리 등 프로젝트 개발·재현 작업이 필요한 경우에는 개발용 의존성을 추가로 설치합니다.
+노트북 재생성, 실행 검증, 원본 Excel 데이터 재처리 등 프로젝트 개발·재현 작업이 필요한 경우에는 선택적인 개발용 의존성을 설치합니다.
 
 `requirements-dev.txt`는 다음과 같이 `requirements.txt`를 포함한 뒤 개발 도구를 추가합니다.
 
@@ -270,8 +279,8 @@ outputs/                  RFM, dtype·상관 통계, 품질·실행 증거, 인�
 scripts/                  데이터 준비·분석·노트북·검증 실행기
 src/pipeline.py           재사용 가능한 DataAnalyzer 클래스
 tests/                    IQR, 결측, 벡터 특징, RFM 테스트
-requirements.txt          과제 허용 분석 라이브러리
-requirements-dev.txt      노트북 빌드·검증·원본 데이터 준비용 개발 의존성
+requirements.txt          과제 실행용 허용 분석 라이브러리
+requirements-dev.txt      선택 사항: 노트북 빌드·검증·원본 재생성용 개발 의존성
 ```
 
 ## 한계
