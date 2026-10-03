@@ -5,10 +5,12 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import re
 import struct
 import sys
 
 import nbformat
+import numpy as np
 import pandas as pd
 
 
@@ -50,6 +52,7 @@ def main() -> None:
         ROOT / "docs/METHODOLOGY.md",
         ROOT / "docs/IMPLEMENTATION_GUIDE.md",
         ROOT / "docs/SUBMISSION_CHECKLIST.md",
+        ROOT / "docs/EVALUATION_GUIDE.md",
     ]
     missing = [str(path.relative_to(ROOT)) for path in required if not path.exists()]
     assert not missing, f"Missing required files: {missing}"
@@ -68,7 +71,18 @@ def main() -> None:
     }
     assert all(callable(getattr(DataAnalyzer, name, None)) for name in required_api)
     assert data.select_dtypes(include="number").shape[1] > 0
-    assert data.select_dtypes(include="object").shape[1] > 0
+    assert any(pd.api.types.is_string_dtype(dtype) for dtype in data.dtypes)
+
+    # CSV 파싱 후 날짜·이미지 배열 타입과 새 피처가 실제로 생성되는지 확인한다.
+    analyzer = DataAnalyzer(ROOT / "data/online_retail_sample.csv")
+    typed = analyzer.load_data()
+    assert pd.api.types.is_datetime64_any_dtype(typed["order_date"])
+    assert isinstance(typed["product_image"].iloc[0], np.ndarray)
+    analyzer.handle_missing_values(strategy="group_mode", group_col="stock_code")
+    featured = analyzer.engineer_features()
+    feature_columns = {"amount", "word_count", "image_mean", "image_std"}
+    assert feature_columns.issubset(featured.columns)
+    assert featured[["word_count", "image_mean", "image_std"]].notna().all().all()
 
     # RFM 결과가 네 세그먼트를 모두 포함하고 핵심 지표에 결측이 없는지 확인한다.
     rfm = pd.read_csv(ROOT / "outputs/rfm_customers.csv")
@@ -139,10 +153,21 @@ def main() -> None:
     insight_fields = {"evidence", "action", "expected_effect", "validation_data"}
     assert all(insight_fields.issubset(item) for item in insights.values())
 
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert readme.count("**(근거)**") >= 3
+    assert readme.count("**(실행)**") >= 3
+    assert readme.count("**(검증)**") >= 3
+
     # 미션에서 금지한 고수준 이미지·ML·자동 EDA 패키지가 의존성에 없어야 한다.
     requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8").lower()
     prohibited = ["opencv", "pillow", "scikit-learn", "nltk", "pandas-profiling", "sweetviz"]
     assert not [name for name in prohibited if name in requirements]
+    packages = {
+        re.match(r"^[a-z0-9_.-]+", line).group(0)
+        for line in requirements.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+    assert packages == {"numpy", "pandas", "matplotlib", "seaborn"}, packages
 
     print("A1-1 verification passed")
     print(f"- data: {data.shape[0]:,} rows x {data.shape[1]} columns")

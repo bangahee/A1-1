@@ -103,7 +103,7 @@
 | Scikit-learn·NLTK 미사용 | 완료 | 전체 Python import 및 `requirements.txt` 확인 |
 | 자동 EDA 도구 미사용 | 완료 | pandas-profiling·sweetviz 미사용 |
 | 이미지 배열을 NumPy로 직접 처리 | 완료 | `parse_image_array()`, `engineer_features()` |
-| Python 3.8 이상 | 완료 | 코드의 타입 표기는 Python 3.10+ 권장, 현재 검증 환경 Python 3.12 |
+| Python 3.8 이상 | 완료 | Python 3.8용 NumPy·Matplotlib 환경 마커와 Python 3.9+ 환경 마커를 분리하고 의존성 해석을 검증 |
 
 ## 11. 실행과 품질 검증
 
@@ -117,6 +117,8 @@
 | 데이터 결과 | 25,000행 × 14열, RFM 고객 3,251명, 세그먼트 4개 |
 
 노트북 실행 시점과 SHA-256은 `outputs/notebook_execution_report.json`과 `outputs/notebook_execution.log`에 기록된다.
+
+평가자의 설계·원리·확장 질문에 대한 짧은 답변과 코드 위치는 `docs/EVALUATION_GUIDE.md`에 정리했다.
 
 ## 12. 선택 보너스 과제
 
