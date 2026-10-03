@@ -33,7 +33,7 @@
 
 현재 데이터는 실제 사진이 없어도 수치형·범주형·날짜형의 세 가지 원본 데이터 유형으로 평가 기준을 충족합니다. `product_image`는 별도의 이미지 배열 연산 항목을 재현하기 위한 네 번째 교육용 유형이며, `image_mean`과 `image_std` 계산 과정만 검증하는 데 사용합니다. 이 값으로 상품 색상·형태·품질 같은 시각적 비즈니스 결론을 내리지 않습니다. 실제 시각 특성이 필요한 후속 과제에서는 공개 라이선스 상품 이미지와 `stock_code`를 연결한 뒤 동일한 NumPy 파이프라인에 입력해야 합니다.
 
-이 설계 결정의 평가항목 연결, 기술적 범위와 한계는 [이미지 배열 사용 결정 문서](docs/IMAGE_ARRAY_DECISION.md)에 별도로 정리했습니다.
+이 설계를 선택한 배경, 적용 범위와 한계는 [이미지 배열 설계 선택 근거](docs/IMAGE_ARRAY_DECISION.md)에 별도로 정리했습니다.
 
 ## 처리 방식
 
@@ -293,4 +293,4 @@ requirements-dev.txt      선택 사항: 노트북 빌드·검증·원본 재생
 - 반품/취소는 RFM 구매에서 제외했으며 별도 반품 분석이 필요합니다.
 - 2011년 12월은 9일까지만 포함된 부분 월입니다.
 
-구현 과정은 [상세 구현 가이드](docs/IMPLEMENTATION_GUIDE.md), 동료 검토를 진행할 때 확인할 순서와 설명 포인트는 [동료 검토 진행 가이드](docs/PEER_REVIEW_GUIDE.md), 이미지 배열 설계의 근거와 한계는 [이미지 배열 사용 결정 문서](docs/IMAGE_ARRAY_DECISION.md), 실제 분석 설명과 출력은 [실행 완료 노트북](notebooks/analysis_report.ipynb)에서 확인할 수 있습니다.
+구현 과정은 [상세 구현 가이드](docs/IMPLEMENTATION_GUIDE.md), 동료 검토를 진행할 때 확인할 순서와 설명 포인트는 [동료 검토 진행 가이드](docs/PEER_REVIEW_GUIDE.md), 이미지 배열을 선택한 공식적인 근거와 한계는 [이미지 배열 설계 선택 근거](docs/IMAGE_ARRAY_DECISION.md), 실제 분석 설명과 출력은 [실행 완료 노트북](notebooks/analysis_report.ipynb)에서 확인할 수 있습니다.
