@@ -53,6 +53,7 @@ python scripts/verify_project.py
 보여줄 곳:
 
 - `data/DATASET.md`
+- `docs/IMAGE_ARRAY_DECISION.md`
 - `notebooks/analysis_report.ipynb`의 데이터 로드 부분
 - `outputs/dtype_summary.csv`
 

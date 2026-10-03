@@ -11,6 +11,7 @@ data/
   online_retail_sample.csv
   source_evidence.png
 docs/
+  IMAGE_ARRAY_DECISION.md
   IMPLEMENTATION_GUIDE.md
   PEER_REVIEW_GUIDE.md
 figures/
