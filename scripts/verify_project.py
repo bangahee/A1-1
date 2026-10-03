@@ -49,10 +49,8 @@ def main() -> None:
         ROOT / "outputs/notebook_execution_report.json",
         ROOT / "outputs/notebook_execution.log",
         ROOT / "figures/CAPTIONS.md",
-        ROOT / "docs/METHODOLOGY.md",
         ROOT / "docs/IMPLEMENTATION_GUIDE.md",
-        ROOT / "docs/SUBMISSION_CHECKLIST.md",
-        ROOT / "docs/EVALUATION_GUIDE.md",
+        ROOT / "docs/PEER_REVIEW_GUIDE.md",
     ]
     missing = [str(path.relative_to(ROOT)) for path in required if not path.exists()]
     assert not missing, f"Missing required files: {missing}"

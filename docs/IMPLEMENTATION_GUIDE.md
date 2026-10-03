@@ -12,8 +12,7 @@ data/
   source_evidence.png
 docs/
   IMPLEMENTATION_GUIDE.md
-  METHODOLOGY.md
-  STEP_BY_STEP.md
+  PEER_REVIEW_GUIDE.md
 figures/
   01_amount_histogram.png
   02_outlier_boxplot.png
@@ -185,7 +184,7 @@ missing_report = analyzer.handle_missing(
 4. 고객 ID 결측 거래는 보존하고 RFM에서만 제외한다.
 5. 이미지가 비었거나 길이가 다르거나 NaN·무한대를 포함하면 실패시킨다.
 
-description 결측은 65건에서 0건이 되었다. 그룹 최빈값은 정보 손실을 줄이지만 그룹 내부 다양성과 분산을 축소할 수 있으므로 그 위험을 docs/METHODOLOGY.md에 기록했다.
+description 결측은 65건에서 0건이 되었다. 그룹 최빈값은 정보 손실을 줄이지만 그룹 내부 다양성과 분산을 축소하고 그룹 간 차이를 과장할 수 있으므로 README와 노트북에 이 위험을 함께 기록했다.
 
 ## 8. NumPy 멀티모달 특징 생성
 
@@ -451,4 +450,3 @@ python scripts/verify_project.py
 ~~~
 
 모든 단계가 성공하면 README 수치, outputs 표, figures 그래프, 실행된 노트북이 동일한 데이터와 코드에서 다시 생성된다.
-

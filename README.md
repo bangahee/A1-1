@@ -282,4 +282,4 @@ requirements-dev.txt      노트북 빌드·검증·원본 데이터 준비용 �
 - 반품/취소는 RFM 구매에서 제외했으며 별도 반품 분석이 필요합니다.
 - 2011년 12월은 9일까지만 포함된 부분 월입니다.
 
-실제 구현 순서는 [상세 구현 가이드](docs/IMPLEMENTATION_GUIDE.md), 빠른 학습 순서는 [단계별 가이드](docs/STEP_BY_STEP.md), 선택 근거와 위험은 [방법론 문서](docs/METHODOLOGY.md), 평가항목별 증거는 [제출 체크리스트](docs/SUBMISSION_CHECKLIST.md), 발표·질문 대비 답변은 [평가 대비 가이드](docs/EVALUATION_GUIDE.md), 분석 설명과 출력은 [실행 완료 노트북](notebooks/analysis_report.ipynb)에서 확인할 수 있습니다.
+구현 과정은 [상세 구현 가이드](docs/IMPLEMENTATION_GUIDE.md), 동료 검토를 진행할 때 확인할 순서와 설명 포인트는 [동료 검토 진행 가이드](docs/PEER_REVIEW_GUIDE.md), 실제 분석 설명과 출력은 [실행 완료 노트북](notebooks/analysis_report.ipynb)에서 확인할 수 있습니다.
