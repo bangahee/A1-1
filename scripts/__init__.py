@@ -1,2 +1,1 @@
-"""Executable build scripts for the A1-1 project."""
-
+"""Executable build scripts; this package marker enables ``python -m scripts...``."""

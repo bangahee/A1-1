@@ -10,6 +10,8 @@ from src.pipeline import DataAnalyzer
 
 class DataAnalyzerTests(unittest.TestCase):
     def setUp(self):
+        # 작은 합성 fixture를 매 테스트마다 새로 만들어 테스트 간 DataFrame 변경이
+        # 누출되지 않게 한다. min_rows=1은 운영 기본값이 아닌 단위 테스트 전용 설정이다.
         self.temp_dir = TemporaryDirectory()
         self.path = Path(self.temp_dir.name) / "sample.csv"
         rows = []
@@ -45,6 +47,7 @@ class DataAnalyzerTests(unittest.TestCase):
         self.assertEqual(enriched.loc[0, "amount"], 2.5)
 
     def test_groupwise_missing_description(self):
+        # 단순히 결측 수만 줄이는 것이 아니라 같은 상품 그룹의 설명으로 채웠는지 본다.
         report = self.analyzer.handle_missing()
         self.assertEqual(report["before"]["description"], 1)
         self.assertEqual(report["after"]["description"], 0)
@@ -73,6 +76,7 @@ class DataAnalyzerTests(unittest.TestCase):
         self.assertTrue(rfm["Segment"].isin(["VIP", "Loyal", "New", "Churned"]).all())
 
     def test_legacy_missing_value_alias_matches_public_api(self):
+        # 과제 명세가 요구하는 정확한 공개 메서드명이 실제 정책 구현으로 위임되는지 확인한다.
         report = self.analyzer.handle_missing_values()
         self.assertEqual(report["after"]["description"], 0)
 

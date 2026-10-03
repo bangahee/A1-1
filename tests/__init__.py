@@ -1,2 +1,1 @@
-"""Tests for the A1-1 analysis pipeline."""
-
+"""Unit-test package for isolated DataAnalyzer behavior checks."""

@@ -1,11 +1,11 @@
 NOTEBOOK EXECUTION SUCCESS
 executor=nbclient.NotebookClient
-started_at=2026-10-03T13:14:40.583286+09:00
-finished_at=2026-10-03T13:14:41.650300+09:00
-duration_seconds=1.067
+started_at=2026-10-03T14:38:21.684487+09:00
+finished_at=2026-10-03T14:38:22.854277+09:00
+duration_seconds=1.17
 python_version=3.14.5
 code_cells=8
 executed_code_cells=8
 error_outputs=0
 execution_counts=[1, 2, 3, 4, 5, 6, 7, 8]
-sha256=c1168e907a557a178a9928e22e2ed1a2f58ecc67f369b0ef23e7de451b8424f8
+sha256=442ee65d7e0afc332404c1e4306674bc59be84ec89a0bb8bce5ea7279093d794

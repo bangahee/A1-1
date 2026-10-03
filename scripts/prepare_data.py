@@ -12,6 +12,8 @@ import pandas as pd
 
 
 DATA_URL = "https://archive.ics.uci.edu/static/public/352/online+retail.zip"
+# 원본 UCI 열 이름을 분석 파이프라인의 데이터 계약과 분리하는 어댑터다.
+# 원천 스키마가 달라져도 이 매핑만 바꾸고 DataAnalyzer는 그대로 재사용할 수 있다.
 RENAME = {
     "InvoiceNo": "invoice_no",
     "StockCode": "stock_code",
@@ -49,11 +51,13 @@ def deterministic_images(stock_codes: pd.Series, size: int = 64) -> np.ndarray:
 
     # 상품 코드의 안정적인 해시를 행별 seed처럼 사용한다. 같은 상품 코드는
     # 실행할 때마다 같은 8x8 교육용 픽셀 배열을 생성하므로 결과가 재현된다.
+    # 실제 사진의 색·형태를 표현하지 않으므로 이 값으로 시각적 결론을 내리지 않는다.
     seeds = pd.util.hash_pandas_object(stock_codes.astype(str), index=False).to_numpy(
         dtype=np.uint64
     )
     pixel_position = np.arange(size, dtype=np.uint64)
     coefficients = pixel_position * np.uint64(1_664_525) + np.uint64(1_013_904_223)
+    # (상품 seed 열) × (픽셀 위치 행) 브로드캐스팅으로 전체 배열을 한 번에 만든다.
     pixels = (seeds[:, None] * coefficients[None, :] + pixel_position[None, :] * 97) % 256
     return pixels.astype(np.uint8)
 
@@ -64,6 +68,7 @@ def prepare(raw_xlsx: Path, output_csv: Path, sample_size: int, seed: int) -> pd
         raise ValueError(f"sample_size={sample_size:,} exceeds {len(source):,} rows")
 
     # seed가 고정된 표본을 시간순으로 정렬해 동일 입력에서 동일 CSV를 만든다.
+    # 이는 모집단 추정용 표본 설계가 아니라 과제 파이프라인의 재현성 확보 목적이다.
     sample = (
         source.sample(n=sample_size, random_state=seed)
         .rename(columns=RENAME)
@@ -76,6 +81,8 @@ def prepare(raw_xlsx: Path, output_csv: Path, sample_size: int, seed: int) -> pd
     sample["amount"] = sample["quantity"].to_numpy() * sample["unit_price"].to_numpy()
     # 실제 상품 사진이 아니라 NumPy 배열 처리 능력을 검증하기 위한 파생 데이터다.
     pixels = deterministic_images(sample["stock_code"], size=64)
+    # 아래 반복은 CSV에 행별 배열을 문자열로 직렬화하는 I/O 경계다. 평가 핵심인
+    # Mean/Std 특징 추출은 pipeline.py에서 np.stack과 axis 연산으로 벡터화한다.
     sample["product_image"] = [
         "[" + " ".join(row.astype(str)) + "]" for row in pixels
     ]
@@ -88,6 +95,7 @@ def prepare(raw_xlsx: Path, output_csv: Path, sample_size: int, seed: int) -> pd
 
 
 def main() -> None:
+    # CLI 인자로 원본 위치·표본 크기·seed를 노출해 코드를 수정하지 않고 재사용한다.
     parser = argparse.ArgumentParser()
     parser.add_argument("--raw-xlsx", type=Path)
     parser.add_argument("--output", type=Path, default=Path("data/online_retail_sample.csv"))

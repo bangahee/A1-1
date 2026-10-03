@@ -15,6 +15,7 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[1]
+# 파일로 직접 실행할 때도 프로젝트의 src 패키지를 가져올 수 있게 루트를 추가한다.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -31,6 +32,8 @@ def png_dimensions(path: Path) -> tuple[int, int]:
 
 
 def main() -> None:
+    # 이 파일의 assert는 사용자 입력 검증이 아니라 제출물 전체의 불변조건을 한 번에
+    # 확인하는 감사용 검사다. 실패 위치가 곧 누락된 평가 증거를 가리킨다.
     # 평가에 필요한 코드·데이터·보고서·실행 증거가 모두 존재하는지 먼저 확인한다.
     required = [
         ROOT / "src/pipeline.py",
@@ -71,7 +74,8 @@ def main() -> None:
     assert data.select_dtypes(include="number").shape[1] > 0
     assert any(pd.api.types.is_string_dtype(dtype) for dtype in data.dtypes)
 
-    # CSV 파싱 후 날짜·이미지 배열 타입과 새 피처가 실제로 생성되는지 확인한다.
+    # 원본 CSV 열 존재만 확인하지 않고 DataAnalyzer를 실제 호출해 날짜·배열 변환과
+    # 파생 피처 생성까지 이어지는 통합 경로를 검증한다.
     analyzer = DataAnalyzer(ROOT / "data/online_retail_sample.csv")
     typed = analyzer.load_data()
     assert pd.api.types.is_datetime64_any_dtype(typed["order_date"])
@@ -160,6 +164,7 @@ def main() -> None:
     requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8").lower()
     prohibited = ["opencv", "pillow", "scikit-learn", "nltk", "pandas-profiling", "sweetviz"]
     assert not [name for name in prohibited if name in requirements]
+    # 주석과 버전 마커를 제외한 패키지 이름만 뽑아 허용된 네 종류와 정확히 비교한다.
     packages = {
         re.match(r"^[a-z0-9_.-]+", line).group(0)
         for line in requirements.splitlines()

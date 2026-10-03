@@ -1,4 +1,8 @@
-"""Build and execute the submitted A1-1 analysis notebook."""
+"""Build and execute the submitted A1-1 analysis notebook.
+
+The builder is the notebook's single source of truth: markdown, code cells, and
+execution evidence are regenerated together instead of being edited separately.
+"""
 
 from __future__ import annotations
 
@@ -254,11 +258,18 @@ display(Image(filename=str(FIGURES / "07_segment_summary_table.png")))
         "language": "python",
         "name": "python3",
     }
-    notebook.metadata.language_info = {"name": "python", "version": "3.12"}
+    # 고정 버전 문자열 대신 실제 빌드 인터프리터를 기록한다. 재현성 판단에는 아래
+    # 실행 리포트의 Python 버전과 노트북 SHA-256을 함께 사용한다.
+    notebook.metadata.language_info = {
+        "name": "python",
+        "version": platform.python_version(),
+    }
     return notebook
 
 
 def main() -> None:
+    # 모든 경로를 스크립트 위치에서 계산하므로 어느 디렉터리에서 호출해도 같은
+    # 제출 파일을 대상으로 한다.
     project_root = Path(__file__).resolve().parents[1]
     output = project_root / "notebooks" / "analysis_report.ipynb"
     report_path = project_root / "outputs" / "notebook_execution_report.json"
@@ -267,6 +278,7 @@ def main() -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     notebook = build_notebook()
     # nbclient가 프로젝트 루트를 작업 경로로 사용해 모든 코드 셀을 실제 실행한다.
+    # 600초 제한은 무한 대기를 막되 25,000행 분석에는 충분한 여유를 둔다.
     client = NotebookClient(
         notebook,
         timeout=600,
@@ -276,6 +288,7 @@ def main() -> None:
     started_at = datetime.now().astimezone()
     started = time.perf_counter()
     try:
+        # 실행이 끝난 뒤에만 notebook을 덮어써 실패한 부분 실행본을 제출하지 않는다.
         client.execute()
         nbf.write(notebook, output)
     except Exception as exc:
@@ -306,7 +319,8 @@ def main() -> None:
         for item in cell.get("outputs", [])
         if item.output_type == "error"
     ]
-    # 실행된 노트북의 해시를 저장해 이후 수동 변경 여부를 검증한다.
+    # 예외가 없어도 셀 출력에 error가 남았는지 별도로 세고, 실행된 노트북의 해시를
+    # 저장해 이후 코드가 수동 변경되지 않았음을 verify_project.py에서 검증한다.
     notebook_hash = hashlib.sha256(output.read_bytes()).hexdigest()
     finished_at = datetime.now().astimezone()
     report = {

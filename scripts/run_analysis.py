@@ -15,6 +15,7 @@ os.environ.setdefault("MPLCONFIGDIR", str(Path(".matplotlib").resolve()))
 
 import matplotlib
 
+# 화면이 없는 CI/평가 환경에서도 PNG를 만들기 위한 비대화형 백엔드다.
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,6 +25,7 @@ import seaborn as sns
 from src.pipeline import DataAnalyzer
 
 
+# 모든 표와 그림에서 순서·색상을 고정해 세그먼트 의미가 그림마다 바뀌지 않게 한다.
 SEGMENT_ORDER = ["VIP", "Loyal", "New", "Churned"]
 PALETTE = {
     "VIP": "#6C5CE7",
@@ -90,7 +92,8 @@ def json_default(value: Any) -> Any:
 
 
 def save_figure(fig: plt.Figure, path: Path) -> None:
-    # 모든 그래프를 동일한 해상도와 여백 정책으로 저장하고 메모리를 즉시 해제한다.
+    # 모든 그래프를 동일한 해상도와 여백 정책으로 저장한다. 반복 생성 시 열린 Figure가
+    # 누적되어 메모리를 점유하지 않도록 저장 직후 명시적으로 닫는다.
     fig.tight_layout()
     fig.savefig(path, dpi=180, bbox_inches="tight", facecolor="white")
     plt.close(fig)
@@ -121,6 +124,7 @@ def create_figures(
     plot_values = positive.melt(var_name="Treatment", value_name="Amount")
     fig, ax = plt.subplots(figsize=(9, 5))
     sns.boxplot(data=plot_values, x="Treatment", y="Amount", color="#74B9FF", ax=ax)
+    # 금액의 긴 오른쪽 꼬리 때문에 선형축에서는 상자 본체가 눌리므로 로그축을 쓴다.
     ax.set_yscale("log")
     ax.set(
         title="Outliers before and after treatment",
@@ -155,6 +159,7 @@ def create_figures(
     save_figure(fig, figures_dir / "03_segment_bar.png")
 
     fig, ax = plt.subplots(figsize=(7, 6))
+    # 상관계수는 관계의 방향·강도를 요약할 뿐 인과관계를 증명하지 않는다.
     corr = rfm[["Recency", "Frequency", "Monetary", "RFM_score"]].corr()
     sns.heatmap(corr, annot=True, fmt=".2f", cmap="vlag", center=0, square=True, ax=ax)
     ax.set(
@@ -165,6 +170,7 @@ def create_figures(
     save_figure(fig, figures_dir / "04_rfm_heatmap.png")
 
     fig, ax = plt.subplots(figsize=(9, 6))
+    # Frequency와 Monetary 모두 치우침이 커 로그축으로 고객 간 관계를 읽기 쉽게 한다.
     sns.scatterplot(
         data=rfm,
         x="Frequency",
@@ -186,6 +192,7 @@ def create_figures(
     save_figure(fig, figures_dir / "05_rfm_scatter.png")
 
     # 월별 합계에는 이상치 조정 금액을 사용하며, 원본 날짜를 월말 단위로 재표본화한다.
+    # 2011년 12월은 9일까지만 있는 부분 월이므로 전월과 직접 비교하지 않는다.
     monthly = (
         frame.loc[frame["amount"].gt(0)]
         .set_index("order_date")
@@ -197,6 +204,7 @@ def create_figures(
     ax.set(title="Monthly sales trend", xlabel="Month", ylabel="IQR-adjusted sales (GBP)")
     save_figure(fig, figures_dir / "06_monthly_sales_line.png")
 
+    # 같은 RFM 근거를 CSV뿐 아니라 검토 화면에서 바로 읽을 수 있는 표 그림으로 남긴다.
     table = segment_summary.reset_index().copy()
     table["customer_share"] = table["customer_share"].map(lambda x: f"{x:.1%}")
     table["revenue_share"] = table["revenue_share"].map(lambda x: f"{x:.1%}")
@@ -260,8 +268,8 @@ def run_analysis(
     info_buffer = io.StringIO()
     frame.info(buf=info_buffer)
     (output_dir / "data_info.txt").write_text(info_buffer.getvalue(), encoding="utf-8")
-    # Array objects are represented by image_mean/std later; comparing thousands
-    # of NumPy arrays in object-level describe is both noisy and very slow.
+    # product_image 객체 배열은 뒤에서 image_mean/std로 요약된다. 수천 개 배열 자체를
+    # object describe로 비교하면 느리고 해석 가치도 없어 기술통계 표에서는 제외한다.
     describable = frame.drop(columns=["product_image"])
     descriptive = describable.describe(include="all").transpose()
     descriptive.insert(0, "dtype", describable.dtypes.astype(str))
@@ -276,6 +284,8 @@ def run_analysis(
 
     missing_report = analyzer.handle_missing(strategy="group_mode", group_col="stock_code")
     frame = analyzer.engineer_features()
+    # RFM Monetary에는 원본을 보존한 amount_clean을 사용해 극단값 한 건이 고객 가치
+    # 전체를 지배하는 현상을 줄인다. 회계 매출이 아니라 비교용 조정 금액이라는 뜻이다.
     outlier_report = analyzer.treat_outliers(
         "amount", method="clip", output_col="amount_clean", positive_only=True
     )
@@ -288,6 +298,7 @@ def run_analysis(
         ["count", "mean", "median", "std"]
     )
     group_stats.to_csv(output_dir / "segment_group_statistics.csv")
+    # 수치 행렬을 별도 저장해 README의 상관 해석을 검토자가 재계산할 수 있게 한다.
     correlations = rfm[["Recency", "Frequency", "Monetary", "RFM_score"]].corr()
     correlations.to_csv(output_dir / "rfm_correlations.csv")
     create_figures(frame, rfm, summary, outlier_report, figures_dir)
