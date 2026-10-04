@@ -43,6 +43,7 @@ class DataAnalyzerTests(unittest.TestCase):
         self.analyzer.handle_missing()
         enriched = self.analyzer.engineer_features()
         np.testing.assert_allclose(enriched["image_mean"], 15.0)
+        np.testing.assert_allclose(enriched["image_std"], np.std([0, 10, 20, 30]))
         self.assertEqual(enriched.loc[0, "word_count"], 3)
         self.assertEqual(enriched.loc[0, "amount"], 2.5)
 
@@ -79,6 +80,98 @@ class DataAnalyzerTests(unittest.TestCase):
         # 과제 명세가 요구하는 정확한 공개 메서드명이 실제 정책 구현으로 위임되는지 확인한다.
         report = self.analyzer.handle_missing_values()
         self.assertEqual(report["after"]["description"], 0)
+
+    def test_recency_uses_calendar_date_and_normalizes_reference(self):
+        self.analyzer.handle_missing_values()
+        self.analyzer.engineer_features()
+        self.analyzer.df.loc[:, "order_date"] = pd.Timestamp("2011-12-07 15:52:00")
+        rfm = self.analyzer.calculate_rfm(reference_date="2011-12-10 18:00:00")
+        self.assertTrue(rfm.Recency.eq(3).all())
+        self.assertEqual(self.analyzer.rfm_reference_date, pd.Timestamp("2011-12-10"))
+
+    def test_reference_date_before_observed_purchases_is_rejected(self):
+        self.analyzer.handle_missing_values()
+        self.analyzer.engineer_features()
+        with self.assertRaises(ValueError):
+            self.analyzer.calculate_rfm(reference_date="2023-12-01")
+
+    def test_calendar_dates_survive_daylight_saving_transition(self):
+        self.analyzer.handle_missing_values()
+        self.analyzer.engineer_features()
+        self.analyzer.df["order_date"] = pd.Timestamp("2024-03-09 18:00:00", tz="America/New_York")
+        rfm = self.analyzer.calculate_rfm(reference_date="2024-03-11")
+        self.assertTrue(rfm.Recency.eq(2).all())
+
+    def test_equal_values_have_equal_scores_and_order_independence(self):
+        values = pd.Series([1, 1, 1, 2, 2, 3, 7, 7], index=list("abcdefgh"))
+        score = DataAnalyzer._quartile_score(values, high_is_good=True)
+        reverse = DataAnalyzer._quartile_score(values.iloc[::-1], high_is_good=True)
+        pd.testing.assert_series_equal(score, reverse.reindex(score.index))
+        self.assertTrue(score.groupby(values).nunique().eq(1).all())
+        self.assertTrue(score.sort_values().between(1, 4).all())
+
+    def test_single_customer_and_constant_metric_have_neutral_score(self):
+        for values in [pd.Series([1]), pd.Series([1, 1, 1])]:
+            self.assertTrue(DataAnalyzer._quartile_score(values, high_is_good=True).eq(2).all())
+            self.assertTrue(DataAnalyzer._quartile_score(values, high_is_good=False).eq(2).all())
+        self.analyzer.handle_missing_values()
+        self.analyzer.engineer_features()
+        self.analyzer.df["customer_id"] = "한 명의 고객"
+        self.assertEqual(len(self.analyzer.calculate_rfm()), 1)
+
+    def test_customer_identifier_does_not_break_scoring_ties(self):
+        self.analyzer.handle_missing_values()
+        self.analyzer.engineer_features()
+        baseline = self.analyzer.calculate_rfm().copy()
+        mapping = {10: 500, 11: 400, 12: 300, 13: 200, 14: 100}
+        self.analyzer.df["customer_id"] = self.analyzer.df.customer_id.map(mapping)
+        current = self.analyzer.calculate_rfm()
+        expected = baseline.rename(index=mapping).reindex(current.index)
+        pd.testing.assert_frame_equal(current, expected)
+
+    def test_group_mean_and_median_preserve_observed_values(self):
+        original = self.analyzer.df.copy()
+        original.loc[:7, "unit_price"] = [1, 3, 101, np.nan, 1, 3, 101, np.nan]
+        for strategy, expected in [("group_mean", 35), ("group_median", 3)]:
+            self.analyzer.df = original.copy()
+            self.analyzer.handle_missing_values(strategy, columns=["unit_price"])
+            self.assertEqual(self.analyzer.df.loc[3, "unit_price"], expected)
+            self.assertTrue(self.analyzer.df.loc[3, "unit_price_imputed"])
+            self.assertFalse(self.analyzer.df.loc[2, "unit_price_imputed"])
+            self.assertEqual(self.analyzer.df.loc[2, "unit_price"], 101)
+
+    def test_all_missing_group_fallback_and_identifier_protection(self):
+        original = self.analyzer.df.copy()
+        original.loc[:7, "unit_price"] = np.nan
+        for fallback in ["keep", "global"]:
+            self.analyzer.df = original.copy()
+            self.analyzer.handle_missing_values("group_median", columns=["unit_price"], fallback=fallback)
+            self.assertEqual(self.analyzer.df.loc[:7, "unit_price"].isna().all(), fallback == "keep")
+        with self.assertRaises(ValueError):
+            self.analyzer.handle_missing_values("group_mean", columns=["customer_id"])
+
+    def test_description_imputation_flag_is_preserved_on_rerun(self):
+        self.analyzer.handle_missing_values()
+        self.analyzer.handle_missing_values()
+        self.assertEqual(self.analyzer.df.description_imputed.sum(), 1)
+
+    def test_invalid_image_lengths_and_nonfinite_values_are_rejected(self):
+        self.analyzer.handle_missing_values()
+        original = self.analyzer.df.copy()
+        for bad in [np.array([]), np.array([1, np.nan, 2, 3])]:
+            self.analyzer.df = original.copy()
+            self.analyzer.df.at[0, "product_image"] = bad
+            with self.assertRaises(ValueError):
+                self.analyzer.engineer_features()
+
+    def test_configurable_scoring_and_absolute_recency_threshold(self):
+        self.analyzer.handle_missing_values()
+        self.analyzer.engineer_features()
+        rfm = self.analyzer.calculate_rfm(score_bins=5, recent_days=0)
+        self.assertTrue(rfm[["R_score", "F_score", "M_score"]].le(5).all().all())
+        self.assertTrue(rfm.Segment.eq("Churned").all())
+        with self.assertRaises(ValueError):
+            self.analyzer.calculate_rfm(score_bins=1)
 
 
 if __name__ == "__main__":

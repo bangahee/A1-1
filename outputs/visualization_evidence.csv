@@ -1,7 +1,7 @@
 file,chart_type,title,x_axis,y_axis
-01_amount_histogram.png,Histogram,Purchase amount distribution (up to 99th percentile),Amount (GBP),Count
-02_outlier_boxplot.png,Box plot,Outliers before and after treatment,Treatment,"Amount (GBP, log scale)"
-03_segment_bar.png,Bar chart,Customers by RFM segment,Segment,Customers
-04_rfm_heatmap.png,Heatmap,RFM correlation heatmap,RFM metrics,RFM metrics
-05_rfm_scatter.png,Scatter plot,Frequency vs monetary value by segment,Frequency (orders),Monetary (GBP)
-06_monthly_sales_line.png,Line chart,Monthly sales trend,Month,IQR-adjusted sales (GBP)
+01_amount_histogram.png,히스토그램,양수 구매금액 분포(99백분위 이하),구매금액(GBP),거래 수
+02_outlier_boxplot.png,박스플롯,IQR 처리 전후 구매금액 비교,처리 단계,"구매금액(GBP, 로그 척도)"
+03_segment_bar.png,막대그래프,RFM 고객군별 고객 수,고객군,고객 수
+04_rfm_heatmap.png,히트맵,RFM 지표의 상관관계,RFM 지표,RFM 지표
+05_rfm_scatter.png,산점도,고객군별 구매 빈도와 조정 구매금액,"구매 빈도(주문 수, 로그 척도)","조정 구매금액(GBP, 로그 척도)"
+06_monthly_sales_line.png,라인차트,월별 조정 구매금액 추이,거래 월,조정 구매금액 합계(GBP)

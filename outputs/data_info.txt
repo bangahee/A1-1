@@ -1,21 +1,21 @@
-<class 'pandas.core.frame.DataFrame'>
+<class 'pandas.DataFrame'>
 RangeIndex: 25000 entries, 0 to 24999
 Data columns (total 14 columns):
- #   Column         Non-Null Count  Dtype         
----  ------         --------------  -----         
- 0   row_id         25000 non-null  int64         
- 1   source_row_id  25000 non-null  int64         
- 2   invoice_no     25000 non-null  object        
- 3   stock_code     25000 non-null  object        
- 4   description    24935 non-null  object        
- 5   quantity       25000 non-null  int64         
- 6   order_date     25000 non-null  datetime64[ns]
- 7   unit_price     25000 non-null  float64       
- 8   customer_id    18700 non-null  float64       
- 9   country        25000 non-null  object        
- 10  amount         25000 non-null  float64       
- 11  product_image  25000 non-null  object        
- 12  image_height   25000 non-null  int64         
- 13  image_width    25000 non-null  int64         
-dtypes: datetime64[ns](1), float64(3), int64(5), object(5)
+ #   Column         Non-Null Count  Dtype
+---  ------         --------------  -----
+ 0   row_id         25000 non-null  int64
+ 1   source_row_id  25000 non-null  int64
+ 2   invoice_no     25000 non-null  str
+ 3   stock_code     25000 non-null  str
+ 4   description    24935 non-null  str
+ 5   quantity       25000 non-null  int64
+ 6   order_date     25000 non-null  datetime64[us]
+ 7   unit_price     25000 non-null  float64
+ 8   customer_id    18700 non-null  float64
+ 9   country        25000 non-null  str
+ 10  amount         25000 non-null  float64
+ 11  product_image  25000 non-null  object
+ 12  image_height   25000 non-null  int64
+ 13  image_width    25000 non-null  int64
+dtypes: datetime64[us](1), float64(3), int64(5), object(1), str(4)
 memory usage: 2.7+ MB

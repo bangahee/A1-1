@@ -53,7 +53,8 @@
       "amount": 0,
       "product_image": 0,
       "image_height": 0,
-      "image_width": 0
+      "image_width": 0,
+      "description_imputed": 0
     }
   },
   "outliers": {
@@ -72,5 +73,8 @@
   },
   "rfm_reference_date": "2011-12-10T00:00:00",
   "valid_rfm_transactions": 18270,
-  "rfm_customers": 3251
+  "rfm_customers": 3251,
+  "segment_count": 4,
+  "score_policy": "평균 순위 백분위, 동점 보존, 4구간",
+  "korean_font": "AppleGothic"
 }

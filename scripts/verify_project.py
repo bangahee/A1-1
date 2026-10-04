@@ -1,4 +1,4 @@
-"""Verify A1-1 deliverables, outputs, and notebook execution state."""
+"""원본 입력·저장 결과·한국어 문서·노트북 실행 기록의 일관성을 확인한다."""
 
 from __future__ import annotations
 
@@ -13,171 +13,111 @@ import nbformat
 import numpy as np
 import pandas as pd
 
-
 ROOT = Path(__file__).resolve().parents[1]
-# 파일로 직접 실행할 때도 프로젝트의 src 패키지를 가져올 수 있게 루트를 추가한다.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-
 from src.pipeline import DataAnalyzer
+from scripts.reporting import SEGMENT_LABELS, analytical_notes, korean_summary, markdown_table
 
 
 def png_dimensions(path: Path) -> tuple[int, int]:
-    # 이미지 디코더 없이 PNG 헤더의 IHDR 위치에서 가로·세로 크기를 읽는다.
+    """디코더 없이 PNG 헤더에서 크기를 확인한다."""
     with path.open("rb") as handle:
-        signature = handle.read(24)
-    if signature[:8] != b"\x89PNG\r\n\x1a\n":
-        raise AssertionError(f"Not a PNG: {path}")
-    return struct.unpack(">II", signature[16:24])
+        header = handle.read(24)
+    assert header[:8] == b"\x89PNG\r\n\x1a\n", f"PNG 형식이 아닙니다: {path}"
+    return struct.unpack(">II", header[16:24])
 
 
 def main() -> None:
-    # 이 파일의 assert는 사용자 입력 검증이 아니라 제출물 전체의 불변조건을 한 번에
-    # 확인하는 감사용 검사다. 실패 위치가 곧 누락된 평가 증거를 가리킨다.
-    # 평가에 필요한 코드·데이터·보고서·실행 증거가 모두 존재하는지 먼저 확인한다.
-    required = [
-        ROOT / "src/pipeline.py",
-        ROOT / "notebooks/analysis_report.ipynb",
-        ROOT / "README.md",
-        ROOT / "data/online_retail_sample.csv",
-        ROOT / "data/source_evidence.png",
-        ROOT / "outputs/rfm_customers.csv",
-        ROOT / "outputs/segment_summary.csv",
-        ROOT / "outputs/segment_group_statistics.csv",
-        ROOT / "outputs/data_quality_report.json",
-        ROOT / "outputs/insights.json",
-        ROOT / "outputs/dtype_summary.csv",
-        ROOT / "outputs/rfm_correlations.csv",
-        ROOT / "outputs/visualization_evidence.csv",
-        ROOT / "outputs/notebook_execution_report.json",
-        ROOT / "outputs/notebook_execution.log",
-        ROOT / "figures/CAPTIONS.md",
-        ROOT / "docs/IMPLEMENTATION_GUIDE.md",
-        ROOT / "docs/PEER_REVIEW_GUIDE.md",
-    ]
-    missing = [str(path.relative_to(ROOT)) for path in required if not path.exists()]
-    assert not missing, f"Missing required files: {missing}"
-
-    # 데이터 규모, 필수 열, 날짜 형식과 공개 API를 과제 명세에 맞춰 검증한다.
-    data = pd.read_csv(ROOT / "data/online_retail_sample.csv", low_memory=False)
-    assert data.shape[0] >= 1_000, data.shape
-    assert data.shape[1] >= 8, data.shape
-    assert {"customer_id", "order_date", "amount", "product_image"}.issubset(data.columns)
-    pd.to_datetime(data["order_date"], errors="raise")
-    required_api = {
-        "load_data",
-        "handle_missing_values",
-        "detect_outliers",
-        "calculate_rfm",
-    }
-    assert all(callable(getattr(DataAnalyzer, name, None)) for name in required_api)
-    assert data.select_dtypes(include="number").shape[1] > 0
-    assert any(pd.api.types.is_string_dtype(dtype) for dtype in data.dtypes)
-
-    # 원본 CSV 열 존재만 확인하지 않고 DataAnalyzer를 실제 호출해 날짜·배열 변환과
-    # 파생 피처 생성까지 이어지는 통합 경로를 검증한다.
+    """현재 입력으로 핵심 결과를 재계산하고 저장된 결과와 비교한다."""
+    required = ["src/pipeline.py", "notebooks/analysis_report.ipynb", "README.md", "data/DATASET.md",
+                "outputs/environment.json", "outputs/rfm_sensitivity.csv", "outputs/rfm_score_ranges.csv",
+                "outputs/monetary_comparison.csv", "outputs/imputation_example_statistics.csv",
+                "outputs/notebook_execution_report.json", "figures/CAPTIONS.md", "docs/METHODOLOGY.md",
+                "docs/IMPLEMENTATION_EVIDENCE.md"]
+    assert all((ROOT / p).is_file() for p in required), "필수 파일이 없습니다"
+    data = pd.read_csv(ROOT / "data/online_retail_sample.csv")
+    assert data.shape[0] >= 1000 and data.shape[1] >= 8, "입력 규모가 부족합니다"
     analyzer = DataAnalyzer(ROOT / "data/online_retail_sample.csv")
     typed = analyzer.load_data()
-    assert pd.api.types.is_datetime64_any_dtype(typed["order_date"])
-    assert isinstance(typed["product_image"].iloc[0], np.ndarray)
-    analyzer.handle_missing_values(strategy="group_mode", group_col="stock_code")
-    featured = analyzer.engineer_features()
-    feature_columns = {"amount", "word_count", "image_mean", "image_std"}
-    assert feature_columns.issubset(featured.columns)
-    assert featured[["word_count", "image_mean", "image_std"]].notna().all().all()
-
-    # RFM 결과가 네 세그먼트를 모두 포함하고 핵심 지표에 결측이 없는지 확인한다.
-    rfm = pd.read_csv(ROOT / "outputs/rfm_customers.csv")
-    assert set(rfm["Segment"]) == {"VIP", "Loyal", "New", "Churned"}
-    assert rfm[["Recency", "Frequency", "Monetary"]].notna().all().all()
-
+    assert pd.api.types.is_datetime64_any_dtype(typed.order_date), "날짜 변환이 필요합니다"
+    assert typed.select_dtypes(include="number").shape[1] > 0
+    assert any(pd.api.types.is_string_dtype(dtype) for dtype in typed.dtypes)
+    assert isinstance(typed.product_image.iloc[0], np.ndarray)
+    before = analyzer.overview()
+    missing = analyzer.handle_missing_values()
+    frame = analyzer.engineer_features()
+    np.testing.assert_allclose(frame.image_mean, np.stack(frame.product_image).mean(axis=1))
+    np.testing.assert_allclose(frame.image_std, np.stack(frame.product_image).std(axis=1))
+    assert frame.description_imputed.sum() == before["missing_by_column"]["description"]
+    outliers = analyzer.treat_outliers("amount", positive_only=True, output_col="amount_clean")
+    current = analyzer.calculate_rfm(amount_col="amount_clean")
+    assert current.Segment.nunique() >= 4, "네 고객군이 필요합니다"
+    assert set(current.Segment).issubset(SEGMENT_LABELS)
+    saved = pd.read_csv(ROOT / "outputs/rfm_customers.csv", index_col=0)
+    pd.testing.assert_frame_equal(current, saved, check_dtype=False, check_index_type=False, atol=1e-9)
+    transactions = analyzer.rfm_transactions(amount_col="amount_clean")
+    calendar_days = (analyzer.rfm_reference_date - transactions.groupby("customer_id").order_date.max().dt.normalize()).dt.days
+    np.testing.assert_array_equal(current.Recency, calendar_days.reindex(current.index))
+    for metric, score in [("Recency", "R_score"), ("Frequency", "F_score"), ("Monetary", "M_score")]:
+        assert current.groupby(metric)[score].nunique().eq(1).all(), "동점 점수가 일치하지 않습니다"
+    summary = analyzer.segment_summary()
+    pd.testing.assert_frame_equal(summary, pd.read_csv(ROOT / "outputs/segment_summary.csv", index_col=0), check_dtype=False, atol=1e-9)
+    correlations = current[["Recency", "Frequency", "Monetary", "RFM_score"]].corr()
+    pd.testing.assert_frame_equal(correlations, pd.read_csv(ROOT / "outputs/rfm_correlations.csv", index_col=0), atol=1e-9)
+    quality = json.loads((ROOT / "outputs/data_quality_report.json").read_text())
+    assert quality["overview"] == before
+    assert quality["missing_values"] == missing
+    assert quality["outliers"] == outliers
+    assert quality["rfm_customers"] == len(current)
+    assert quality["rfm_reference_date"] == analyzer.rfm_reference_date.isoformat()
+    dtypes = pd.read_csv(ROOT / "outputs/dtype_summary.csv")
+    assert dtypes.column_count.sum() == data.shape[1]
     descriptive = pd.read_csv(ROOT / "outputs/descriptive_statistics.csv")
-    assert "dtype" in descriptive.columns
-    assert {"mean", "std", "25%", "50%", "75%"}.issubset(descriptive.columns)
-    dtype_summary = pd.read_csv(ROOT / "outputs/dtype_summary.csv")
-    assert dtype_summary["column_count"].sum() == data.shape[1]
-
-    correlations = pd.read_csv(ROOT / "outputs/rfm_correlations.csv", index_col=0)
-    assert {"Recency", "Frequency", "Monetary", "RFM_score"}.issubset(correlations.columns)
-
-    # 평가기가 PNG를 직접 읽지 않더라도 여섯 차트의 제목과 양 축 레이블을
-    # 확인할 수 있도록 별도 증거 표의 완전성을 검증한다.
-    visual_evidence = pd.read_csv(ROOT / "outputs/visualization_evidence.csv")
-    assert len(visual_evidence) >= 6
-    label_columns = ["file", "chart_type", "title", "x_axis", "y_axis"]
-    assert set(label_columns).issubset(visual_evidence.columns)
-    assert visual_evidence[label_columns].notna().all().all()
-    assert visual_evidence[label_columns].astype(str).apply(
-        lambda column: column.str.strip().ne("").all()
-    ).all()
-
-    # 그래프 개수뿐 아니라 제출 화면에서 판독 가능한 최소 픽셀 크기도 검사한다.
-    figures = sorted((ROOT / "figures").glob("*.png"))
-    assert len(figures) >= 6, f"Expected 6+ PNG figures, got {len(figures)}"
-    for figure in figures:
-        width, height = png_dimensions(figure)
-        assert width >= 900 and height >= 500, (figure.name, width, height)
-
-    # 노트북의 모든 코드 셀이 실제로 실행되었고 오류 출력이 없는지 확인한다.
+    assert {"dtype", "mean", "std", "25%", "50%", "75%"}.issubset(descriptive.columns)
+    visual = pd.read_csv(ROOT / "outputs/visualization_evidence.csv")
+    assert set(visual.chart_type) >= {"히스토그램", "박스플롯", "막대그래프", "히트맵", "산점도", "라인차트"}
+    for row in visual.itertuples():
+        assert all(str(getattr(row, col)).strip() for col in ["title", "x_axis", "y_axis"])
+        assert all(re.search("[가-힣]", str(getattr(row, col))) for col in ["title", "x_axis", "y_axis"])
+        w, h = png_dimensions(ROOT / "figures" / row.file)
+        assert w >= 900 and h >= 500, "그림 해상도가 부족합니다"
     notebook = nbformat.read(ROOT / "notebooks/analysis_report.ipynb", as_version=4)
-    code_cells = [cell for cell in notebook.cells if cell.cell_type == "code"]
-    assert code_cells and all(cell.execution_count is not None for cell in code_cells)
-    errors = [
-        output
-        for cell in code_cells
-        for output in cell.get("outputs", [])
-        if output.output_type == "error"
-    ]
-    assert not errors, f"Notebook contains error outputs: {errors}"
-
-    execution = json.loads(
-        (ROOT / "outputs/notebook_execution_report.json").read_text(encoding="utf-8")
-    )
+    cells = [c for c in notebook.cells if c.cell_type == "code"]
+    assert cells and all(c.execution_count is not None for c in cells)
+    errors = [o for c in cells for o in c.outputs if o.output_type == "error"]
+    assert not errors, "노트북 오류 출력이 있습니다"
+    execution = json.loads((ROOT / "outputs/notebook_execution_report.json").read_text())
     assert execution["status"] == "success"
     assert execution["error_outputs"] == 0
-    assert execution["executed_code_cells"] == execution["code_cells"] == len(code_cells)
-    # 실행 보고서의 해시와 현재 노트북을 비교해 실행 후 코드가 바뀌지 않았음을 증명한다.
-    assert execution["sha256"] == hashlib.sha256(
-        (ROOT / "notebooks/analysis_report.ipynb").read_bytes()
-    ).hexdigest()
-    assert "NOTEBOOK EXECUTION SUCCESS" in (
-        ROOT / "outputs/notebook_execution.log"
-    ).read_text(encoding="utf-8")
-
-    quality = json.loads((ROOT / "outputs/data_quality_report.json").read_text(encoding="utf-8"))
-    assert quality["overview"]["rows"] == 25_000
-    assert quality["missing_values"]["after"]["description"] == 0
-    assert quality["outliers"]["after_count"] == 0
-
-    # 세 가지 비즈니스 제안이 근거·실행·기대효과·검증 데이터 구조를 모두 갖춰야 한다.
-    insights = json.loads((ROOT / "outputs/insights.json").read_text(encoding="utf-8"))
+    assert execution["executed_code_cells"] == execution["code_cells"] == len(cells)
+    assert execution["total_cells"] == len(notebook.cells)
+    assert execution["sha256"] == hashlib.sha256((ROOT / "notebooks/analysis_report.ipynb").read_bytes()).hexdigest()
+    assert "노트북 전체 실행 성공" in (ROOT / "outputs/notebook_execution.log").read_text()
+    markdown_cells = "\n".join(c.source for c in notebook.cells if c.cell_type == "markdown")
+    assert all(term in markdown_cells for term in ["중앙값", "분산", "SIMD", "90일", "동점"])
+    for c in cells:
+        for output in c.outputs:
+            if "text/markdown" in output.get("data", {}):
+                assert "\\n" not in output.data["text/markdown"], "마크다운에 이스케이프 줄바꿈이 남아 있습니다"
+    readme = (ROOT / "README.md").read_text()
+    assert "평가항목" not in readme and "체크리스트" not in readme and "제출" not in readme
+    assert markdown_table(korean_summary(summary)) in readme, "README 수치가 다릅니다"
+    for metric1, metric2 in [("Frequency", "Monetary"), ("Recency", "Frequency")]:
+        assert f"{correlations.loc[metric1,metric2]:.3f}" in readme
+    assert all(readme.count(label) >= 3 for label in ["**(근거)**", "**(실행)**", "**(검증)**"])
+    insights = json.loads((ROOT / "outputs/insights.json").read_text())
     assert len(insights) >= 3
-    insight_fields = {"evidence", "action", "expected_effect", "validation_data"}
-    assert all(insight_fields.issubset(item) for item in insights.values())
-
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert readme.count("**(근거)**") >= 3
-    assert readme.count("**(실행)**") >= 3
-    assert readme.count("**(검증)**") >= 3
-
-    # 미션에서 금지한 고수준 이미지·ML·자동 EDA 패키지가 의존성에 없어야 한다.
-    requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8").lower()
-    prohibited = ["opencv", "pillow", "scikit-learn", "nltk", "pandas-profiling", "sweetviz"]
-    assert not [name for name in prohibited if name in requirements]
-    # 주석과 버전 마커를 제외한 패키지 이름만 뽑아 허용된 네 종류와 정확히 비교한다.
-    packages = {
-        re.match(r"^[a-z0-9_.-]+", line).group(0)
-        for line in requirements.splitlines()
-        if line.strip() and not line.lstrip().startswith("#")
-    }
-    assert packages == {"numpy", "pandas", "matplotlib", "seaborn"}, packages
-
-    print("A1-1 verification passed")
-    print(f"- data: {data.shape[0]:,} rows x {data.shape[1]} columns")
-    print(f"- RFM: {len(rfm):,} customers, 4 segments")
-    print(f"- figures: {len(figures)} valid PNG files")
-    print(f"- notebook: {len(code_cells)} executed code cells, 0 errors")
-    print("- evidence: dtype, correlations, captions, and nbclient execution log")
+    assert all({"evidence", "action", "expected_effect", "validation_data"}.issubset(x) for x in insights.values())
+    sensitivity = pd.read_csv(ROOT / "outputs/rfm_sensitivity.csv")
+    assert sensitivity.groupby("시나리오")["고객 수"].sum().eq(len(current)).all()
+    assert sensitivity["기본 대비 분류 이동률"].between(0, 1).all()
+    requirements = (ROOT / "requirements.txt").read_text().lower()
+    packages = {re.match(r"^[a-z0-9_.-]+", line).group() for line in requirements.splitlines() if line.strip() and not line.lstrip().startswith("#")}
+    assert packages == {"numpy", "pandas", "matplotlib", "seaborn"}
+    print("분석 결과와 실행 기록의 일관성 검증 통과")
+    print(f"입력 {len(data):,}행·{data.shape[1]}열 / 고객 {len(current):,}명·{current.Segment.nunique()}개 고객군")
+    print(f"한국어 분석 그림 {len(visual)}종 / 새 커널 코드 셀 {len(cells)}개 / 오류 0개")
 
 
 if __name__ == "__main__":

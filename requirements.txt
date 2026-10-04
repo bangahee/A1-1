@@ -1,7 +1,5 @@
-# Assignment/runtime analytical libraries only.
-numpy>=1.24,<1.25; python_version == "3.8"
-numpy>=1.25; python_version >= "3.9"
-pandas>=2.0
-matplotlib>=3.7,<3.8; python_version == "3.8"
-matplotlib>=3.8; python_version >= "3.9"
+# 거래 분석에 사용하는 네 가지 라이브러리. Python 3.14.5 환경에서 검증했다.
+numpy>=1.25
+pandas>=2.2
+matplotlib>=3.8
 seaborn>=0.13

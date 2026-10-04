@@ -1,16 +1,17 @@
 {
   "status": "success",
-  "started_at": "2026-10-03T14:38:21.684487+09:00",
-  "finished_at": "2026-10-03T14:38:22.854277+09:00",
-  "duration_seconds": 1.17,
+  "started_at": "2026-10-05T05:10:09.211143+09:00",
+  "finished_at": "2026-10-05T05:10:11.222785+09:00",
+  "duration_seconds": 2.012,
   "executor": "nbclient.NotebookClient",
   "kernel": "python3",
   "python_version": "3.14.5",
+  "python_executable": "/Users/bangahee/Documents/ChatGPT/심화/.venv/bin/python",
+  "working_directory": "notebooks",
   "notebook": "notebooks/analysis_report.ipynb",
-  "sha256": "442ee65d7e0afc332404c1e4306674bc59be84ec89a0bb8bce5ea7279093d794",
-  "total_cells": 22,
-  "code_cells": 8,
-  "executed_code_cells": 8,
+  "total_cells": 29,
+  "code_cells": 11,
+  "executed_code_cells": 11,
   "error_outputs": 0,
   "execution_counts": [
     1,
@@ -20,6 +21,10 @@
     5,
     6,
     7,
-    8
-  ]
+    8,
+    9,
+    10,
+    11
+  ],
+  "sha256": "986dd481ac34d5fe2825000122e5fd552cb7b658cecf96491a1aba410daf1ecc"
 }

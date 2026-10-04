@@ -1,13 +1,12 @@
-# Figure captions
+# 그림 설명
 
-| File | Title | X axis | Y axis | Caption |
-|---|---|---|---|---|
-| `01_amount_histogram.png` | Purchase amount distribution (up to 99th percentile) | Amount (GBP) | Count | 양수 구매금액의 99백분위 이하 분포. 긴 오른쪽 꼬리와 소액 주문 집중을 보여준다. |
-| `02_outlier_boxplot.png` | Outliers before and after treatment | Treatment | Amount (GBP, log scale) | IQR 클리핑 전후 양수 구매금액 비교. 로그 축과 주석으로 처리 건수·비율을 함께 표시한다. |
-| `03_segment_bar.png` | Customers by RFM segment | Segment | Customers | VIP, Loyal, New, Churned별 고객 수와 세그먼트 규모 차이. |
-| `04_rfm_heatmap.png` | RFM correlation heatmap | RFM metrics | RFM metrics | Recency, Frequency, Monetary, RFM 점수 사이 Pearson 상관계수. 상관은 인과를 뜻하지 않는다. |
-| `05_rfm_scatter.png` | Frequency vs monetary value by segment | Frequency (orders) | Monetary (GBP) | 로그 축에서 구매 빈도와 조정 구매금액의 관계를 고객 세그먼트별로 표시한다. |
-| `06_monthly_sales_line.png` | Monthly sales trend | Month | IQR-adjusted sales (GBP) | IQR 조정 양수 구매금액의 월별 합계. 2011년 12월은 9일까지만 있는 부분 월이다. |
-| `07_segment_summary_table.png` | RFM segment evidence table | 해당 없음 | 해당 없음 | 세그먼트별 고객 수, 비중, 평균 Recency, 빈도 중앙값, 평균 Monetary, 매출 비중 요약. |
+- `01_amount_histogram.png`: **양수 구매금액 분포(99백분위 이하)**. 가로축: 구매금액(GBP), 세로축: 거래 수.
+- `02_outlier_boxplot.png`: **IQR 처리 전후 구매금액 비교**. 가로축: 처리 단계, 세로축: 구매금액(GBP, 로그 척도).
+- `03_segment_bar.png`: **RFM 고객군별 고객 수**. 가로축: 고객군, 세로축: 고객 수.
+- `04_rfm_heatmap.png`: **RFM 지표의 상관관계**. 가로축: RFM 지표, 세로축: RFM 지표.
+- `05_rfm_scatter.png`: **고객군별 구매 빈도와 조정 구매금액**. 가로축: 구매 빈도(주문 수, 로그 척도), 세로축: 조정 구매금액(GBP, 로그 척도).
+- `06_monthly_sales_line.png`: **월별 조정 구매금액 추이**. 가로축: 거래 월, 세로축: 조정 구매금액 합계(GBP).
 
-모든 그래프는 `python -m scripts.run_analysis`로 재생성되며, 계산 원자료는 `outputs/`의 CSV와 JSON에 저장된다.
+히스토그램은 양수 금액의 99백분위 이하만 표시한다. 박스플롯과 산점도의 로그 척도는 긴 꼬리를 읽기 위한 선택이다. 상관행렬은 인과를 뜻하지 않는다. 월별 그림의 마지막 12월은 부분 월이다.
+
+07은 고객군 요약 표, 08은 실제 사진이 아닌 교육용 배열 예시다. 모든 그림은 현재 분석 실행에서 생성한다.

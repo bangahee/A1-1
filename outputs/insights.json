@@ -1,20 +1,23 @@
 {
   "vip_retention": {
-    "evidence": "VIPs are 27.8% of customers and generate 63.4% of adjusted revenue; mean frequency is 6.0 orders.",
-    "action": "Offer tiered early access and service benefits to VIP customers.",
-    "expected_effect": "Protect revenue concentration and improve repeat purchase rate.",
-    "validation_data": "Campaign/control repeat-purchase rate, gross margin, benefit cost, and 90-day churn."
+    "title": "핵심 우수 고객 유지",
+    "evidence": "핵심 우수 고객은 947명(29.1%)이며 조정 금액의 64.8%를 만든다. 평균 주문 수는 5.79회다.",
+    "action": "핵심 우수 고객에게 등급별 선공개·서비스 혜택을 제공한다. 첫 2주에 혜택 비용·마진 기준을 정하고 4주 캠페인 후 90일 반복구매율을 대조군과 비교한다.",
+    "expected_effect": "기대 효과는 반복 구매와 주요 매출 기반의 유지다. 금액 기여도가 커 우선 검토하되 고객별 마진과 혜택 비용에 따라 우선순위를 조정한다.",
+    "validation_data": "대조군의 반복구매율·90일 미구매율, 고객별 마진과 혜택 비용이 필요하다. 반복구매율이 개선되지 않거나 증분 공헌이익이 0 이하라면 제안의 효과는 지지되지 않는다."
   },
-  "churn_reactivation": {
-    "evidence": "Churned customers are 50.0% of customers with mean recency 179.5 days.",
-    "action": "Run a randomized reactivation test with a time-limited incentive.",
-    "expected_effect": "Recover dormant customers without discounting the entire base.",
-    "validation_data": "Holdout reactivation, incremental revenue, contribution margin, unsubscribe rate, and churn-reason survey."
+  "dormant_reactivation": {
+    "title": "장기 미구매 고객 재방문",
+    "evidence": "장기 미구매 고객은 1,630명(50.1%)이며 평균 최근성은 180.1일이다. 상대 점수 기준의 미구매 집단으로 확정 이탈자는 아니다.",
+    "action": "장기 미구매 고객을 대상으로 2주 준비 후 4주간 기간 제한 인센티브를 무작위 대조 실험한다. 증분 매출·공헌이익·수신거부율을 추적한다.",
+    "expected_effect": "기대 효과는 전체 고객 할인 없이 일부 고객의 재방문을 유도하는 것이다. 할인비와 자연 재구매를 캠페인 효과로 오인할 위험을 함께 관리한다.",
+    "validation_data": "무작위 대조군의 자연 재구매, 이탈 사유, 할인 비용과 마진 데이터가 필요하다. 재방문율이나 증분 공헌이익이 대조군보다 개선되지 않으면 가설을 지지하지 않는다."
   },
-  "new_customer_onboarding": {
-    "evidence": "The New segment contains 531 customers (16.3%) and median frequency 1.",
-    "action": "Trigger product education and a second-order recommendation within 14 days.",
-    "expected_effect": "Increase conversion from first purchase to the second order.",
-    "validation_data": "14/30-day second-order rate, recommendation click-through, returns, and cohort retention."
+  "recent_repeat_purchase": {
+    "title": "최근 저빈도 고객의 추가 구매",
+    "evidence": "최근 저빈도 고객은 461명(14.2%)이고 표본 내 주문 빈도 중앙값은 1회다. 신규 가입이나 생애 첫 구매가 확인된 집단은 아니다.",
+    "action": "최근 저빈도 고객에게 마지막 관측 구매 후 상품 사용 안내와 연관상품을 제안하고 14/30일 추가 구매율을 대조군과 비교한다. 첫 구매 온보딩은 전체 구매 이력에서 첫 구매가 확인된 대상에만 적용한다.",
+    "expected_effect": "기대 효과는 최근 구매 고객의 재방문과 추가 구매 전환이다. 추천의 관련성과 반품 증가를 함께 살핀다.",
+    "validation_data": "전체 구매 이력·추천 노출·클릭·반품 데이터가 필요하다. 추가 구매율이 대조군보다 높지 않거나 반품·혜택 비용이 성과를 상쇄하면 효과는 지지되지 않는다."
   }
 }

@@ -1,4 +1,4 @@
-"""Download and prepare a reproducible A1-1 retail sample."""
+"""원본 거래에서 재현 가능한 표본과 교육용 배열을 생성한다."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def acquire_xlsx(raw_xlsx: Path | None, cache_dir: Path) -> Path:
     target = cache_dir / "Online Retail.xlsx"
     # 이미 내려받은 압축 파일과 엑셀 파일을 재사용해 반복 실행을 빠르게 한다.
     if not archive.exists():
-        print(f"Downloading {DATA_URL}")
+        print(f"원본 데이터 다운로드: {DATA_URL}")
         urlretrieve(DATA_URL, archive)
     if not target.exists():
         with ZipFile(archive) as bundle:
@@ -47,7 +47,7 @@ def acquire_xlsx(raw_xlsx: Path | None, cache_dir: Path) -> Path:
 
 
 def deterministic_images(stock_codes: pd.Series, size: int = 64) -> np.ndarray:
-    """Create repeatable grayscale arrays from product identifiers."""
+    """상품 코드로부터 같은 값이 재생성되는 교육용 배열을 만든다."""
 
     # 상품 코드의 안정적인 해시를 행별 seed처럼 사용한다. 같은 상품 코드는
     # 실행할 때마다 같은 8x8 교육용 픽셀 배열을 생성하므로 결과가 재현된다.
@@ -65,10 +65,10 @@ def deterministic_images(stock_codes: pd.Series, size: int = 64) -> np.ndarray:
 def prepare(raw_xlsx: Path, output_csv: Path, sample_size: int, seed: int) -> pd.DataFrame:
     source = pd.read_excel(raw_xlsx)
     if len(source) < sample_size:
-        raise ValueError(f"sample_size={sample_size:,} exceeds {len(source):,} rows")
+        raise ValueError(f"표본 {sample_size:,}행이 원본 {len(source):,}행보다 큽니다")
 
     # seed가 고정된 표본을 시간순으로 정렬해 동일 입력에서 동일 CSV를 만든다.
-    # 이는 모집단 추정용 표본 설계가 아니라 과제 파이프라인의 재현성 확보 목적이다.
+    # 거래 행 표본은 고객의 전체 이력을 보존하지 않으므로 분석 범위를 명시한다.
     sample = (
         source.sample(n=sample_size, random_state=seed)
         .rename(columns=RENAME)
@@ -96,18 +96,18 @@ def prepare(raw_xlsx: Path, output_csv: Path, sample_size: int, seed: int) -> pd
 
 def main() -> None:
     # CLI 인자로 원본 위치·표본 크기·seed를 노출해 코드를 수정하지 않고 재사용한다.
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--raw-xlsx", type=Path)
-    parser.add_argument("--output", type=Path, default=Path("data/online_retail_sample.csv"))
-    parser.add_argument("--sample-size", type=int, default=25_000)
-    parser.add_argument("--seed", type=int, default=42)
+    parser = argparse.ArgumentParser(description="거래 표본과 교육용 배열 생성")
+    parser.add_argument("--raw-xlsx", type=Path, help="이미 받은 원본 Excel 경로")
+    parser.add_argument("--output", type=Path, default=Path("data/online_retail_sample.csv"), help="표본 저장 경로")
+    parser.add_argument("--sample-size", type=int, default=25_000, help="표본 행 수")
+    parser.add_argument("--seed", type=int, default=42, help="재현용 난수 시드")
     args = parser.parse_args()
 
     source = acquire_xlsx(args.raw_xlsx, Path("data/raw"))
     sample = prepare(source, args.output, args.sample_size, args.seed)
-    print(f"Saved {len(sample):,} rows x {sample.shape[1]} columns to {args.output}")
-    print(f"Date range: {sample['order_date'].min()} -> {sample['order_date'].max()}")
-    print(f"Missing customer_id: {sample['customer_id'].isna().sum():,}")
+    print(f"표본 저장: {len(sample):,}행 × {sample.shape[1]}열, {args.output}")
+    print(f"관측 기간: {sample['order_date'].min()} → {sample['order_date'].max()}")
+    print(f"고객 ID 결측: {sample['customer_id'].isna().sum():,}건")
 
 
 if __name__ == "__main__":

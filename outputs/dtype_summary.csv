@@ -1,5 +1,6 @@
 dtype,column_count
 int64,5
-object,5
+str,4
 float64,3
-datetime64[ns],1
+datetime64[us],1
+object,1

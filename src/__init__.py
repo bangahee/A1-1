@@ -1,4 +1,4 @@
-"""Reusable analysis components for the A1-1 mission."""
+"""거래 분석에 재사용하는 공개 구성 요소."""
 
 from .pipeline import DataAnalyzer
 
