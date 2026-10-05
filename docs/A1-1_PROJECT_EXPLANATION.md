@@ -74,7 +74,7 @@ UCI Online Retail은 영국 비점포 소매업체의 2010-12-01~2011-12-09 거�
 
 ### 2.2 표본과 재현성
 
-[표본 준비 코드](/Users/bangahee/Documents/ChatGPT/심화/scripts/prepare_data.py:65)는 원본에서 거래 행 25,000개를 뽑는다.
+[표본 준비 코드](https://github.com/bangahee/A1-1/blob/main/scripts/prepare_data.py#L65)는 원본에서 거래 행 25,000개를 뽑는다.
 
 ```python
 source.sample(n=sample_size, random_state=seed)
@@ -94,7 +94,7 @@ source.sample(n=sample_size, random_state=seed)
 
 `product_image`는 원본 사진이 아니라 상품 코드의 해시와 픽셀 위치로 만든 **8×8 교육용 배열**이다. 8×8은 가로 8칸·세로 8칸, 총 64칸이라는 뜻이다. 각 칸에는 흑백 이미지의 픽셀처럼 0~255 사이의 정수 하나가 들어간다. 실제 흑백 사진이라면 0은 검정, 255는 흰색에 해당하지만, 여기서는 실제 사진에서 읽은 밝기가 아니다.
 
-[배열 생성 코드](/Users/bangahee/Documents/ChatGPT/심화/scripts/prepare_data.py:49)는 상품 코드를 숫자로 대응시키는 **해시**와 64개 위치를 이용해 값을 만든다. 같은 상품 코드는 같은 배열을 갖는다. 표본 선택의 `seed`를 바꾸어도, 동일한 생성 코드·환경에서 같은 상품 코드의 배열 자체가 달라지는 것은 아니다.
+[배열 생성 코드](https://github.com/bangahee/A1-1/blob/main/scripts/prepare_data.py#L49)는 상품 코드를 숫자로 대응시키는 **해시**와 64개 위치를 이용해 값을 만든다. 같은 상품 코드는 같은 배열을 갖는다. 표본 선택의 `seed`를 바꾸어도, 동일한 생성 코드·환경에서 같은 상품 코드의 배열 자체가 달라지는 것은 아니다.
 
 CSV에는 이 64개 숫자를 한 줄 문자열로 저장하고, 로드할 때 숫자 배열로 복원한다. `image_height=8`, `image_width=8`은 그 배열을 다시 8×8 모양으로 볼 수 있게 크기를 알려 주는 열이다. 특징 계산에는 64칸을 일렬로 펼친 배열을 사용한다. 전체 평균·표준편차는 칸의 순서를 바꾸어도 같으므로 이 계산에 2차원 모양을 유지할 필요는 없다.
 
@@ -173,7 +173,7 @@ frame.loc[frame["amount"].gt(0), "amount"]
 | `scripts/verify_project.py` | 저장 결과·현재 계산 대조 | 오래된 산출물과 불일치 탐지 |
 | `tests/test_pipeline.py` | 작은 예제의 기대값 검사 | 핵심 계산 오류 확인 |
 
-[DataAnalyzer](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:41)는 핵심 계산을, [run_analysis()](/Users/bangahee/Documents/ChatGPT/심화/scripts/run_analysis.py:213)는 실행 흐름과 저장을 담당한다.
+[DataAnalyzer](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L41)는 핵심 계산을, [run_analysis()](https://github.com/bangahee/A1-1/blob/main/scripts/run_analysis.py#L213)는 실행 흐름과 저장을 담당한다.
 
 ### 4.2 클래스와 상태 관리
 
@@ -219,8 +219,8 @@ self.rfm = None
 
 **정적 메서드(`@staticmethod`)**는 클래스 안에 있지만 특정 분석 객체의 저장 상태를 읽지 않고, 전달받은 입력으로 계산하는 함수다. 일반 메서드처럼 첫 인자로 `self`를 받지 않는다. 현재 두 곳에 사용한다.
 
-- [parse_image_array()](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:67): 셀의 문자열 하나를 받아 숫자 배열로 복원한다. `load_data()`에서 각 이미지 셀에 적용하며, 현재 거래표 전체나 RFM 결과를 알아야 할 이유가 없다.
-- [_quartile_score()](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:338): 숫자 Series와 점수 설정을 받아 점수 Series를 반환한다. `calculate_rfm()`에서 R·F·M에 각각 사용한다. 필요한 숫자가 인자로 들어오므로 함수가 `self.df`를 직접 읽을 필요가 없다.
+- [parse_image_array()](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L67): 셀의 문자열 하나를 받아 숫자 배열로 복원한다. `load_data()`에서 각 이미지 셀에 적용하며, 현재 거래표 전체나 RFM 결과를 알아야 할 이유가 없다.
+- [_quartile_score()](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L338): 숫자 Series와 점수 설정을 받아 점수 Series를 반환한다. `calculate_rfm()`에서 R·F·M에 각각 사용한다. 필요한 숫자가 인자로 들어오므로 함수가 `self.df`를 직접 읽을 필요가 없다.
 
 예를 들어 아래 호출은 분석 객체를 만들거나 CSV를 읽기 전에도 가능하다.
 
@@ -248,7 +248,7 @@ summary = analyzer.segment_summary()
 
 ## 5. 데이터 로드와 기본 탐색
 
-[load_data()](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:86)는 파일 존재·필수 열·최소 1,000행과 8열을 검증한다. 실제 입력은 25,000행·14열이며 수량·단가 같은 수치, 국가·상품 코드 같은 범주, 구매일 같은 날짜를 포함한다. 교육용 배열과 별개로 세 가지 실제 데이터 유형이 존재한다.
+[load_data()](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L86)는 파일 존재·필수 열·최소 1,000행과 8열을 검증한다. 실제 입력은 25,000행·14열이며 수량·단가 같은 수치, 국가·상품 코드 같은 범주, 구매일 같은 날짜를 포함한다. 교육용 배열과 별개로 세 가지 실제 데이터 유형이 존재한다.
 
 ### 5.1 날짜와 배열 복원
 
@@ -270,7 +270,7 @@ frame["order_date"] = pd.to_datetime(
 
 `info()`는 전체 크기, 열별 자료형과 값이 존재하는 개수를 보여 준다. 날짜가 문자열로 남아 있지는 않은지, 어떤 열에 빈 값이 있는지 확인할 수 있다. `describe()`는 변수별 통계 요약으로 중심과 퍼짐을 살펴보는 데 사용한다.
 
-파일을 읽었다는 사실만으로 입력을 이해한 것은 아니다. 실제 값, 구조, 통계가 답하는 질문이 달라 세 함수를 함께 사용한다. [구조 출력](/Users/bangahee/Documents/ChatGPT/심화/outputs/data_info.txt)과 [분석 노트북](/Users/bangahee/Documents/ChatGPT/심화/notebooks/analysis_report.ipynb)에 그 결과와 해석이 있다.
+파일을 읽었다는 사실만으로 입력을 이해한 것은 아니다. 실제 값, 구조, 통계가 답하는 질문이 달라 세 함수를 함께 사용한다. [구조 출력](https://github.com/bangahee/A1-1/blob/main/outputs/data_info.txt)과 [분석 노트북](https://github.com/bangahee/A1-1/blob/main/notebooks/analysis_report.ipynb)에 그 결과와 해석이 있다.
 
 ## 6. 결측치 처리
 
@@ -286,7 +286,7 @@ frame["order_date"] = pd.to_datetime(
 
 전체 표의 최빈 상품명으로 채우면 어떨까? 많이 팔린 가방의 이름이 컵의 빈 설명에 들어갈 수 있다. 같은 상품 그룹을 먼저 사용하는 이유다.
 
-[결측 처리 코드](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:126)의 핵심이다.
+[결측 처리 코드](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L126)의 핵심이다.
 
 ```python
 group_value = frame.groupby(
@@ -356,7 +356,7 @@ filled = frame[column].fillna(group_value)
 
 중앙값 대치는 평균도 바꿀 수 있다. 같은 예제에 3을 넣으면 `[1, 3, 101, 3]`의 평균은 35에서 27로 변한다. 대치 전후 통계와 대치 여부를 함께 남겨야 하는 이유다.
 
-[대치 예제 통계](/Users/bangahee/Documents/ChatGPT/심화/outputs/imputation_example_statistics.csv)에 전역·그룹 평균·중앙값 비교가 있다. 이 예제는 실제 사업 결과에 인위적 결측을 넣은 분석이 아니다.
+[대치 예제 통계](https://github.com/bangahee/A1-1/blob/main/outputs/imputation_example_statistics.csv)에 전역·그룹 평균·중앙값 비교가 있다. 이 예제는 실제 사업 결과에 인위적 결측을 넣은 분석이 아니다.
 
 ### 6.4 결과와 식별자 보존
 
@@ -368,7 +368,7 @@ filled = frame[column].fillna(group_value)
 
 ### 7.1 수치·텍스트 특징
 
-[engineer_features()](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:201)는 다음 열을 추가한다.
+[engineer_features()](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L201)는 다음 열을 추가한다.
 
 | 특징 | 계산 | 의미 |
 |---|---|---|
@@ -502,7 +502,7 @@ stds = image_matrix.std(axis=1)
 
 배열 연산이면 항상 빠를까? 작은 입력에서는 행렬을 만드는 비용이 이점을 상쇄할 수 있다. 큰 이미지가 매우 많으면 전체 `stack()`을 만들 공간 자체가 부족할 수 있다. 이때는 작은 묶음 안에서는 NumPy로 계산하고, 묶음 사이에는 반복을 사용하는 **배치 처리**가 적합하다. `for`와 NumPy 중 하나만 무조건 옳은 것이 아니라 반복을 어디에 두고 어느 크기로 계산할지 선택하는 문제다. 현재 속도 배수는 측정하지 않았으며, 확장 시 시간과 최대 메모리를 함께 확인해야 한다.
 
-![교육용 배열과 평균·표준편차](/Users/bangahee/Documents/ChatGPT/심화/figures/08_educational_array.png)
+![교육용 배열과 평균·표준편차](../figures/08_educational_array.png)
 
 ## 8. IQR 이상치 탐지와 클리핑
 
@@ -512,7 +512,7 @@ stds = image_matrix.std(axis=1)
 
 ### 8.1 경계 계산과 선택 이유
 
-[경계 계산](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:227)은 Q1·Q3를 구해 IQR과 상·하한을 직접 계산한다. Q1은 정렬의 약 25% 위치, Q3는 약 75% 위치이며 IQR은 가운데 50%의 폭이다. 표본 위치 사이 값은 보간될 수 있다.
+[경계 계산](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L227)은 Q1·Q3를 구해 IQR과 상·하한을 직접 계산한다. Q1은 정렬의 약 25% 위치, Q3는 약 75% 위치이며 IQR은 가운데 50%의 폭이다. 표본 위치 사이 값은 보간될 수 있다.
 
 현재 양수 거래의 경계는 다음과 같다.
 
@@ -530,7 +530,7 @@ IQR = Q3 − Q1 = 13.950 GBP
 
 ### 8.2 탐지와 처리의 차이
 
-[detect_outliers()](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:254)는 경계 밖 행을 찾는다. [treat_outliers()](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:271)는 클리핑 또는 삭제 정책을 적용한다. 이상치라는 판단과 오류라는 판단은 다르므로 단계를 분리한다.
+[detect_outliers()](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L254)는 경계 밖 행을 찾는다. [treat_outliers()](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L271)는 클리핑 또는 삭제 정책을 적용한다. 이상치라는 판단과 오류라는 판단은 다르므로 단계를 분리한다.
 
 **클리핑**은 구간 안의 값은 유지하고 하한 미만은 하한, 상한 초과는 상한으로 바꾸는 처리다. [클리핑의 공식 동작](https://numpy.org/doc/stable/reference/generated/numpy.clip.html)
 
@@ -563,7 +563,7 @@ frame.loc[eligible, target] = values.loc[eligible].clip(
 
 유효 RFM 구매의 원본 합계는 £380,154.47, 조정 합계는 £256,920.02로 약 32.42% 감소한다. 큰 값을 낮춘 결과이며 실제 사업 매출 감소나 비용 절감이 아니다. 조정 영향이 커 원본 금액 기준 RFM도 함께 비교한다.
 
-![IQR 처리 전후 분포](/Users/bangahee/Documents/ChatGPT/심화/figures/02_outlier_boxplot.png)
+![IQR 처리 전후 분포](../figures/02_outlier_boxplot.png)
 
 ## 9. 기술통계·상관관계·시각화
 
@@ -591,37 +591,37 @@ frame.loc[eligible, target] = values.loc[eligible].clip(
 
 금액은 주문금액 합계라 빈도와 구조적으로 연결된다. 상관관계는 캠페인의 인과 효과가 아니다. 최근성–종합점수의 −0.680도 최근성 점수가 합계에 들어가는 산식의 영향을 받는다. 현재 p-value나 신뢰구간으로 유의성을 주장하지는 않는다.
 
-[상관계수 결과](/Users/bangahee/Documents/ChatGPT/심화/outputs/rfm_correlations.csv)에서 계산값을 확인할 수 있다.
+[상관계수 결과](https://github.com/bangahee/A1-1/blob/main/outputs/rfm_correlations.csv)에서 계산값을 확인할 수 있다.
 
 ### 9.3 여섯 시각화의 목적과 읽는 기준
 
-[시각화 코드](/Users/bangahee/Documents/ChatGPT/심화/scripts/run_analysis.py:74)는 같은 실행 결과로 여섯 차트를 만들고 한국어 제목·축·범례를 적용한다.
+[시각화 코드](https://github.com/bangahee/A1-1/blob/main/scripts/run_analysis.py#L74)는 같은 실행 결과로 여섯 차트를 만들고 한국어 제목·축·범례를 적용한다.
 
 여섯 그림은 같은 내용을 반복하는 것이 아니라 서로 다른 질문에 답한다. 분포, 처리 영향, 고객 수, 변수 관계, 시간 변화를 각각 확인하는 구성이다.
 
 **히스토그램**은 어느 금액 구간에 거래가 몰리는지 보여 준다. 양수 원본 금액의 99백분위 이하를 표시해 일반적인 금액대를 읽기 쉽게 한다. 상위 1%를 입력에서 삭제한 것이 아니라 이 그림에서 제외한 것이다.
 
-![구매금액 히스토그램](/Users/bangahee/Documents/ChatGPT/심화/figures/01_amount_histogram.png)
+![구매금액 히스토그램](../figures/01_amount_histogram.png)
 
 **박스플롯**은 앞의 처리 전후 그림이다. 중앙값·범위·극단값의 차이를 보며, 클리핑으로 분포가 얼마나 달라졌는지 확인한다. 처리 후 같은 경계 밖 값이 0이라는 사실과 데이터 정확성은 구분한다.
 
 **막대그래프**는 고객군별 고객 수의 차이를 보여 준다. 가장 큰 집단이 반드시 가장 큰 금액이나 이익을 만드는 것은 아니므로 뒤의 고객군별 금액 비중과 함께 읽는다.
 
-![고객군별 고객 수](/Users/bangahee/Documents/ChatGPT/심화/figures/03_segment_bar.png)
+![고객군별 고객 수](../figures/03_segment_bar.png)
 
 **히트맵**은 여러 상관계수를 한 번에 비교한다. 색이 진하면 해당 계수의 절댓값이 크다는 뜻이다. 어떤 지표들이 함께 움직이는지 찾는 데 도움이 되지만 인과 효과는 별도 검증이 필요하다.
 
-![RFM 상관행렬](/Users/bangahee/Documents/ChatGPT/심화/figures/04_rfm_heatmap.png)
+![RFM 상관행렬](../figures/04_rfm_heatmap.png)
 
 **산점도**의 점 하나는 고객 한 명이다. 가로축은 주문 빈도, 세로축은 조정 금액이고 색은 고객군이다. 같은 빈도에서도 금액이 다른 고객과 전체적인 동반 변화를 볼 수 있다. 점이 겹치거나 표본이 일부 누락되었다는 한계도 고려한다.
 
-![빈도·금액 산점도](/Users/bangahee/Documents/ChatGPT/심화/figures/05_rfm_scatter.png)
+![빈도·금액 산점도](../figures/05_rfm_scatter.png)
 
 박스플롯·산점도의 로그 축은 같은 거리를 같은 배수로 표현한다. 10→100과 100→1,000은 모두 10배다. 긴 꼬리를 읽기 쉽지만 일반 축과 거리 해석이 다르다.
 
 **라인차트**는 월별 조정 구매금액의 흐름을 보여 준다. 어느 달의 값이 높거나 낮은지뿐 아니라 비교 기간이 같은지도 확인해야 한다.
 
-![월별 조정 구매금액](/Users/bangahee/Documents/ChatGPT/심화/figures/06_monthly_sales_line.png)
+![월별 조정 구매금액](../figures/06_monthly_sales_line.png)
 
 마지막 월 감소는 곧 사업 악화일까? 2011년 12월은 9일까지라 관측일 수가 다르다. 완전한 달끼리 비교하거나 일평균·계절성·재고 등을 추가 확인해야 한다.
 
@@ -642,11 +642,11 @@ frame.loc[eligible, target] = values.loc[eligible].clip(
 
 ### 10.1 유효 구매와 고객별 집계
 
-[rfm_transactions()](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:316)는 고객·날짜가 있고 금액·수량이 양수이며 주문번호가 C로 시작하지 않는 거래를 사용한다. 고객 ID가 없으면 누구의 구매인지 묶을 수 없고, 취소 거래를 주문 횟수에 넣으면 실제 구매보다 빈도가 커질 수 있다. 그래서 먼저 집계할 거래를 정한다. 현재 18,270행이 남는다.
+[rfm_transactions()](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L316)는 고객·날짜가 있고 금액·수량이 양수이며 주문번호가 C로 시작하지 않는 거래를 사용한다. 고객 ID가 없으면 누구의 구매인지 묶을 수 없고, 취소 거래를 주문 횟수에 넣으면 실제 구매보다 빈도가 커질 수 있다. 그래서 먼저 집계할 거래를 정한다. 현재 18,270행이 남는다.
 
 취소·반품은 현재 구매 RFM과 분리한다. 따라서 Monetary는 유효 양수 구매의 누적 금액이며, 반품까지 차감한 순매출이나 이익은 아니다.
 
-[calculate_rfm()](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:353)는 고객별로 다음 집계를 수행한다.
+[calculate_rfm()](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L353)는 고객별로 다음 집계를 수행한다.
 
 ```python
 rfm = transactions.groupby(customer_col).agg(
@@ -687,7 +687,7 @@ R=3일, F=2회, M=£35를 그대로 더하면 40이지만, 일·횟수·돈을 �
 
 네 구간은 낮은 쪽과 높은 쪽을 간단히 비교할 수 있는 탐색 기준이다. 금액 £100을 무조건 몇 점이라고 정하지 않고, 현재 고객들 사이에서의 위치를 사용한다. 따라서 다른 표본에서는 같은 £100도 다른 점수를 받을 수 있다. 네 구간이 사업상 최적이라는 뜻은 아니다.
 
-[점수 계산](/Users/bangahee/Documents/ChatGPT/심화/src/pipeline.py:338)의 핵심이다.
+[점수 계산](https://github.com/bangahee/A1-1/blob/main/src/pipeline.py#L338)의 핵심이다.
 
 ```python
 score = np.ceil(
@@ -725,7 +725,7 @@ score = np.ceil(
 
 1회 고객이 차지하는 1~1,480등의 평균 순위는 740.5다. `740.5/3,251×4≈0.91`을 올림해 모두 1점이 된다. 나머지 동점 그룹도 같은 방식으로 처리한 결과 2점에는 고객이 없다. 앞의 네 명짜리 가상 예제에서 1회가 2점이었던 것과 다르게, 전체 고객 수와 상대 분포가 바뀌면 점수가 달라진다. `_quartile_score`는 동일 인원 사분위 그룹을 강제하지 않고 평균 순위 백분위를 사용한다.
 
-실제 R점수의 최근성 범위는 4점 1~23일, 3점 24~62일, 2점 64~162일, 1점 163~374일이다. 63일은 현재 결과에 관측값이 없다. 즉 현재 상대 기준에서 R≥3인 고객은 최근 62일 이내에 구매한 사람들이다. “상위 점수”라는 표현을 실제 구매 간격으로 해석할 수 있게 [점수별 범위](/Users/bangahee/Documents/ChatGPT/심화/outputs/rfm_score_ranges.csv)를 확인한다. 이 범위는 현재 관측 결과이며 고정된 날짜 경계가 아니다.
+실제 R점수의 최근성 범위는 4점 1~23일, 3점 24~62일, 2점 64~162일, 1점 163~374일이다. 63일은 현재 결과에 관측값이 없다. 즉 현재 상대 기준에서 R≥3인 고객은 최근 62일 이내에 구매한 사람들이다. “상위 점수”라는 표현을 실제 구매 간격으로 해석할 수 있게 [점수별 범위](https://github.com/bangahee/A1-1/blob/main/outputs/rfm_score_ranges.csv)를 확인한다. 이 범위는 현재 관측 결과이며 고정된 날짜 경계가 아니다.
 
 ### 10.5 고객군 분류 규칙
 
@@ -794,7 +794,7 @@ New는 가입·생애 첫 구매를 확인한 신규 고객이 아니고 Churned
 
 원본 금액 기준으로 바꾼 분류 이동률은 **1.23%**, 40명이다. 합계 금액은 크게 달라졌는데 고객군 변화는 왜 작을까? 분류는 금액의 차이 자체가 아니라 **상대 점수와 조건 경계를 넘는지**에 달려 있다. 구매금액이 줄어도 상대적으로 여전히 높은 점수라면 VIP에 남을 수 있고, 최근성이 낮은 점수인 고객은 금액이 달라져도 Churned에 남는다. 작은 이동률은 이 비교에서 이름이 비교적 유지되었다는 뜻이며, 기존 분류가 정답이라는 뜻은 아니다.
 
-[민감도 결과](/Users/bangahee/Documents/ChatGPT/심화/outputs/rfm_sensitivity.csv)와 [금액 비교](/Users/bangahee/Documents/ChatGPT/심화/outputs/monetary_comparison.csv)에 실제 값이 있다.
+[민감도 결과](https://github.com/bangahee/A1-1/blob/main/outputs/rfm_sensitivity.csv)와 [금액 비교](https://github.com/bangahee/A1-1/blob/main/outputs/monetary_comparison.csv)에 실제 값이 있다.
 
 ### 11.3 좋은 변화의 판단 조건
 
@@ -810,7 +810,7 @@ Frequency가 증가해도 관측 기간을 늘렸거나 누락 거래를 다시 
 
 ### 12.1 고객군 결과와 우선순위
 
-[고객군 요약](/Users/bangahee/Documents/ChatGPT/심화/outputs/segment_summary.csv)의 현재 결과다.
+[고객군 요약](https://github.com/bangahee/A1-1/blob/main/outputs/segment_summary.csv)의 현재 결과다.
 
 | 고객군 | 고객 수 | 고객 비중 | 평균 최근성 | 빈도 중앙값 | 조정 금액 비중 |
 |---|---:|---:|---:|---:|---:|
@@ -853,7 +853,7 @@ Frequency가 증가해도 관측 기간을 늘렸거나 누락 거래를 다시 
 
 공헌이익은 매출에서 해당 판매의 변동 비용을 뺀 개념이다. 증분 공헌이익은 캠페인이 없었을 경우에 비해 추가로 얻은 이익에 추가 캠페인 비용 등을 반영한다. 현재 입력만으로 실제 값을 계산할 수는 없다.
 
-세 제안은 수치 근거 → 실행 대상·방법·기대 효과 → 추가 데이터·실패 조건을 연결한다. [README](/Users/bangahee/Documents/ChatGPT/심화/README.md)에도 같은 구조로 정리되어 있다. 실제 실행으로 효과가 입증된 결과는 아니다.
+세 제안은 수치 근거 → 실행 대상·방법·기대 효과 → 추가 데이터·실패 조건을 연결한다. [README](https://github.com/bangahee/A1-1/blob/main/README.md)에도 같은 구조로 정리되어 있다. 실제 실행으로 효과가 입증된 결과는 아니다.
 
 ## 13. 대규모 처리와 병목
 
@@ -875,7 +875,7 @@ RGB float32: RGB uint8의 4배 ≈ 12.58 TB
 
 `uint8`은 0~255 정수 하나를 1바이트에 저장하는 자료형이다. 흑백은 픽셀당 값 하나, RGB는 빨강·초록·파랑 값 세 개를 저장해 3배다. 그 세 값을 계산용 float32로 바꾸면 값당 4바이트라 다시 4배가 된다. 그래서 흑백 uint8에서 RGB float32로 바꾸면 픽셀 수가 같아도 12배의 공간이 필요하다.
 
-이 수치는 압축 파일 용량과 다르고 문자열·객체·복사본의 메모리는 추가다. **약 12.58 TB를 한꺼번에 RAM에 올리는 설계는 일반적인 개인 컴퓨터에서 실행하기 어렵다.** `np.stack()`이 전체 이미지를 모으는 현재 방식은 이 지점에서 바꿔야 한다. 실제로 상품 사진을 연결한다면 이미지 수는 고객 수보다 고유 상품 수에 따라 계산해야 할 수도 있다. [용량 계산 결과](/Users/bangahee/Documents/ChatGPT/심화/outputs/scaling_estimates.csv)에 가정과 수치가 있다.
+이 수치는 압축 파일 용량과 다르고 문자열·객체·복사본의 메모리는 추가다. **약 12.58 TB를 한꺼번에 RAM에 올리는 설계는 일반적인 개인 컴퓨터에서 실행하기 어렵다.** `np.stack()`이 전체 이미지를 모으는 현재 방식은 이 지점에서 바꿔야 한다. 실제로 상품 사진을 연결한다면 이미지 수는 고객 수보다 고유 상품 수에 따라 계산해야 할 수도 있다. [용량 계산 결과](https://github.com/bangahee/A1-1/blob/main/outputs/scaling_estimates.csv)에 가정과 수치가 있다.
 
 ### 13.2 병목과 개선 순서
 
@@ -949,19 +949,19 @@ CSV의 긴 숫자 문자열 대신 배열 바이너리 형식을 사용하면 �
 
 ### 15.1 핵심 계산 테스트
 
-[테스트](/Users/bangahee/Documents/ChatGPT/심화/tests/test_pipeline.py) 16개로 작은 배열 통계, 상품별 대치, IQR 처리, 달력 최근성, 동점 보존, 고객 ID 변경에 따른 결과 불변성 등을 확인한다.
+[테스트](https://github.com/bangahee/A1-1/blob/main/tests/test_pipeline.py) 16개로 작은 배열 통계, 상품별 대치, IQR 처리, 달력 최근성, 동점 보존, 고객 ID 변경에 따른 결과 불변성 등을 확인한다.
 
 작은 입력은 사람이 기대값을 계산할 수 있어 오류 위치를 찾기 쉽다. `min_rows=1`은 작은 테스트용 설정이고 실제 기본 기준은 1,000행이다. 통과는 검사 사례를 뒷받침하지만 모든 입력과 방법론의 타당성을 증명하지는 않는다.
 
 ### 15.2 새 커널 전체 실행
 
-[노트북](/Users/bangahee/Documents/ChatGPT/심화/notebooks/analysis_report.ipynb)은 총 29셀 중 코드 셀 11개를 새 커널에서 실행했고 오류는 0개다. 커널은 코드를 실행하고 변수를 보관하는 Python 환경이며 새 커널은 이전 변수 없이 처음부터 실행되는지 확인한다.
+[노트북](https://github.com/bangahee/A1-1/blob/main/notebooks/analysis_report.ipynb)은 총 29셀 중 코드 셀 11개를 새 커널에서 실행했고 오류는 0개다. 커널은 코드를 실행하고 변수를 보관하는 Python 환경이며 새 커널은 이전 변수 없이 처음부터 실행되는지 확인한다.
 
 노트북 마크다운에는 단계와 대치 전략, 벡터화·IQR·RFM 기준의 이유가 있다. 현재 실행에서 CSV부터 다시 계산하고 그림도 생성해 예전 산출물과 새 계산이 어긋나는 것을 줄인다.
 
 ### 15.3 실행 기록과 일관성
 
-[실행 기록](/Users/bangahee/Documents/ChatGPT/심화/outputs/notebook_execution_report.json)에 환경·셀 수·오류 수·SHA-256을 저장한다. 해시는 파일 내용으로 만든 식별 값으로 현재 노트북과 실행 대상이 같은지 대조하는 데 사용한다.
+[실행 기록](https://github.com/bangahee/A1-1/blob/main/outputs/notebook_execution_report.json)에 환경·셀 수·오류 수·SHA-256을 저장한다. 해시는 파일 내용으로 만든 식별 값으로 현재 노트북과 실행 대상이 같은지 대조하는 데 사용한다.
 
 검증기는 현재 입력에서 다시 계산한 값과 저장 RFM·요약·상관·README를 비교한다. 실제 그림의 한글·제목·축도 확인했다. 계산 테스트, 전체 실행, 산출물 일관성은 서로 다른 부분을 검사한다.
 
